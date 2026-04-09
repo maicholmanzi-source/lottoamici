@@ -396,7 +396,7 @@ function evaluatePlayItem(item, latestExtraction) {
   };
 }
 
-function renderMetodi(groups, latestExtraction) {
+function renderMetodi(groups) {
   if (!giocateMetodi) return;
 
   if (!groups.length) {
@@ -408,7 +408,13 @@ function renderMetodi(groups, latestExtraction) {
     .map((group) => {
       const entries = limitItems(group.items)
         .map((item) => {
-          const status = evaluatePlayItem(item, latestExtraction);
+          const status = item.status || {
+            tone: "neutral",
+            label: "Non verificata",
+            detail: "Esito non disponibile.",
+            meta: {}
+          };
+
           return `
           <div class="play-entry play-entry-grid">
             <div class="play-entry-main">
@@ -421,6 +427,11 @@ function renderMetodi(groups, latestExtraction) {
             <div class="play-entry-status status-${status.tone}">
               <span class="result-chip result-chip-${status.tone}">${status.label}</span>
               <p>${status.detail}</p>
+              <div class="status-meta-list">
+                <div class="status-meta-item"><strong>Segnale</strong><span>${status.meta?.segnale || "N/D"}</span></div>
+                <div class="status-meta-item"><strong>Finestra</strong><span>${status.meta?.finestra || "N/D"}</span></div>
+                <div class="status-meta-item"><strong>Colpi</strong><span>${status.meta?.avanzamento || "N/D"}</span></div>
+              </div>
             </div>
           </div>
         `;
@@ -442,52 +453,26 @@ async function caricaGiocateMetodi() {
 
   giocateMetodi.innerHTML = `<div class="card">Caricamento giocate...</div>`;
   if (esitoUltimaEstrazione) {
-    esitoUltimaEstrazione.textContent = "Sto controllando le giocate sull'ultima estrazione disponibile...";
+    esitoUltimaEstrazione.textContent = "Sto controllando le giocate considerando i colpi di gioco di ogni metodo...";
   }
 
-  const endpoints = [
-    { url: "/api/metodo-azzerati", builder: buildAzzerati },
-    { url: "/api/metodo-monco", builder: buildMonco },
-    { url: "/api/metodo-9-90", builder: build990 },
-    { url: "/api/metodo-isotopi", builder: buildIsotopi },
-    { url: "/api/metodo-gemelli", builder: buildGemelli },
-    { url: "/api/metodo-don-pedro", builder: buildDonPedro },
-    { url: "/api/metodo-ninja", builder: buildNinja },
-    { url: "/api/metodo-doppio-30", builder: buildDoppio30 },
-    { url: "/api/metodo-venere", builder: buildVenere }
-  ];
-
   try {
-    const [metodiResults, estrazioniResults] = await Promise.all([
-      Promise.allSettled(
-        endpoints.map(async ({ url, builder }) => {
-          const data = await fetchJsonSafe(url);
-          return builder(data);
-        })
-      ),
-      Promise.allSettled([fetchJsonSafe("/api/estrazioni")])
-    ]);
-
-    const validGroups = metodiResults
-      .filter((result) => result.status === "fulfilled" && result.value && result.value.items?.length)
-      .map((result) => result.value);
-
-    const estrazioniResult = estrazioniResults[0];
-    const latestExtraction = estrazioniResult.status === "fulfilled" ? estrazioniResult.value?.estrazioni?.[0] || null : null;
+    const data = await fetchJsonSafe("/api/giocate-metodi");
+    const groups = data.gruppi || [];
 
     if (esitoUltimaEstrazione) {
-      if (latestExtraction) {
-        esitoUltimaEstrazione.textContent = `Colonna esito aggiornata sull'ultima estrazione disponibile: ${latestExtraction.dataTesto} (concorso ${latestExtraction.concorso}).`;
+      if (data.estrazionePiuRecente) {
+        esitoUltimaEstrazione.textContent = `Esiti aggiornati considerando il segnale e i colpi di gioco di ogni metodo. Ultima estrazione disponibile: ${data.estrazionePiuRecente.dataTesto} (concorso ${data.estrazionePiuRecente.concorso}).`;
       } else {
-        esitoUltimaEstrazione.textContent = "Non sono riuscito a caricare l'ultima estrazione per il controllo esiti.";
+        esitoUltimaEstrazione.textContent = "Esiti aggiornati considerando il segnale e i colpi di gioco di ogni metodo.";
       }
     }
 
-    renderMetodi(validGroups, latestExtraction);
+    renderMetodi(groups);
   } catch (error) {
     giocateMetodi.innerHTML = `<div class="card"><strong>Errore:</strong> ${error.message}</div>`;
     if (esitoUltimaEstrazione) {
-      esitoUltimaEstrazione.textContent = "Errore durante il controllo delle giocate.";
+      esitoUltimaEstrazione.textContent = "Errore durante il controllo delle giocate con i colpi di gioco.";
     }
   }
 }

@@ -662,6 +662,29 @@ pre {
   border-color: #bbf7d0;
 }
 
+
+.status-meta-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.status-meta-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 14px;
+  color: #475569;
+}
+
+.status-meta-item strong {
+  color: #0f172a;
+}
+
+.status-meta-item span {
+  text-align: right;
+}
+
 .status-partial {
   background: #fff7ed;
   border-color: #fed7aa;

@@ -964,6 +964,376 @@ function getPrevisioniVenere(estrazioni) {
   };
 }
 
+
+function getTipoGiocataLabel(size) {
+  switch (size) {
+    case 1:
+      return "Ambata";
+    case 2:
+      return "Ambo";
+    case 3:
+      return "Terno";
+    case 4:
+      return "Quaterna";
+    case 5:
+      return "Cinquina";
+    default:
+      return `Giocata da ${size} numeri`;
+  }
+}
+
+function formatNumeroLabel(numero) {
+  return String(numero).padStart(2, "0");
+}
+
+function normalizeGiocata(giocata = []) {
+  return [...new Set((giocata || []).map((n) => Number(n)).filter((n) => Number.isFinite(n)))];
+}
+
+function sortBySignalDateDesc(items = []) {
+  return [...items].sort((a, b) => {
+    const byDate = String(b.dataSegnale || "").localeCompare(String(a.dataSegnale || ""));
+    if (byDate !== 0) return byDate;
+    return String(b.concorso || "").localeCompare(String(a.concorso || ""));
+  });
+}
+
+function buildGiocateGroups(estrazioni) {
+  const groups = [];
+  const azzerati = getPrevisioniAzzerati(estrazioni);
+  if (azzerati?.previsioni?.length) {
+    groups.push({
+      nome: "Metodo Azzerati",
+      items: azzerati.previsioni.map((item) => ({
+        titolo: item.ruota,
+        sottotitolo: `Concorso ${item.concorso}`,
+        descrizione: `Ambate su ${item.ruota}`,
+        numeri: [item.ambata1, item.ambata2],
+        ruote: [item.ruota],
+        giocate: [[item.ambata1], [item.ambata2]],
+        dataSegnale: item.dataRilevamento,
+        dataSegnaleTesto: item.dataRilevamentoTesto,
+        concorso: item.concorso,
+        colpiMassimi: item.colpiMassimi,
+        colpiPassati: item.colpiPassati,
+        colpiRimasti: item.colpiRimasti
+      }))
+    });
+  }
+
+  const monco = getPrevisioniMonco(estrazioni);
+  if (monco?.risultati?.length) {
+    groups.push({
+      nome: "Metodo Monco",
+      items: sortBySignalDateDesc(monco.risultati.flatMap((item) => (
+        (item.previsioni || []).map((prev) => ({
+          titolo: item.coppia,
+          sottotitolo: `Isotopo ${formatNumeroLabel(prev.isotopo)}`,
+          descrizione: "Ambate del Monco",
+          numeri: prev.ambate || [],
+          ruote: [item.ruota1, item.ruota2],
+          giocate: (prev.ambate || []).map((numero) => [numero]),
+          dataSegnale: item.dataSegnale,
+          dataSegnaleTesto: item.dataSegnaleTesto,
+          concorso: item.concorso,
+          colpiPassati: item.colpiPassati
+        }))
+      )))
+    });
+  }
+
+  const metodo990 = getPrevisioni990(estrazioni);
+  if (metodo990?.previsioni?.length) {
+    groups.push({
+      nome: "Metodo 9 e 90",
+      items: metodo990.previsioni.map((item) => ({
+        titolo: item.ruota,
+        sottotitolo: `Concorso ${item.concorso}`,
+        descrizione: `Ambate su ${item.ruota}`,
+        numeri: item.ambate || [9, 90],
+        ruote: [item.ruota],
+        giocate: (item.ambate || [9, 90]).map((numero) => [numero]),
+        dataSegnale: item.dataRilevamento,
+        dataSegnaleTesto: item.dataRilevamentoTesto,
+        concorso: item.concorso,
+        colpiPassati: item.colpiPassati || 0
+      }))
+    });
+  }
+
+  const isotopi = getPrevisioniIsotopi(estrazioni);
+  if (isotopi?.risultati?.length) {
+    groups.push({
+      nome: "Metodo Isotopi",
+      items: sortBySignalDateDesc(isotopi.risultati.flatMap((item) => (
+        (item.previsioni || []).map((prev) => ({
+          titolo: item.coppia,
+          sottotitolo: `Segnale ${item.dataSegnaleTesto}`,
+          descrizione: `Ambata su ${(prev.ruoteDiGioco || []).join(" - ")}`,
+          numeri: [prev.ambata],
+          ruote: prev.ruoteDiGioco || [],
+          giocate: [[prev.ambata]],
+          dataSegnale: item.dataSegnale,
+          dataSegnaleTesto: item.dataSegnaleTesto,
+          concorso: item.concorso,
+          colpiMassimi: prev.colpiMassimi,
+          colpiPassati: item.colpiPassati,
+          colpiRimasti: item.colpiRimasti
+        }))
+      )))
+    });
+  }
+
+  const gemelli = getPrevisioniGemelli(estrazioni);
+  if (gemelli?.risultati?.length) {
+    groups.push({
+      nome: "Metodo Gemelli",
+      items: sortBySignalDateDesc(gemelli.risultati.flatMap((item) => (
+        (item.previsioni || []).map((prev) => ({
+          titolo: item.coppia,
+          sottotitolo: `Segnale ${item.dataSegnaleTesto}`,
+          descrizione: "Ambate del metodo",
+          numeri: [prev.ambata1, prev.ambata2],
+          ruote: [item.ruota1, item.ruota2],
+          giocate: [[prev.ambata1], [prev.ambata2]],
+          dataSegnale: item.dataSegnale,
+          dataSegnaleTesto: item.dataSegnaleTesto,
+          concorso: item.concorso,
+          colpiPassati: item.colpiPassati
+        }))
+      )))
+    });
+  }
+
+  const donPedro = getPrevisioniDonPedro(estrazioni);
+  if (donPedro?.risultati?.length) {
+    groups.push({
+      nome: "Metodo Don Pedro",
+      items: sortBySignalDateDesc(donPedro.risultati.flatMap((item) => (
+        (item.previsioni || []).map((prev) => ({
+          titolo: item.coppia,
+          sottotitolo: `Isotopo ${formatNumeroLabel(prev.isotopo)}`,
+          descrizione: "Ambi con capogioco fisso",
+          numeri: [prev.capogioco, ...(prev.abbinamenti || [])],
+          ruote: [item.ruota1, item.ruota2],
+          giocate: prev.ambi || [],
+          dataSegnale: item.dataSegnale,
+          dataSegnaleTesto: item.dataSegnaleTesto,
+          concorso: item.concorso,
+          colpiPassati: item.colpiPassati
+        }))
+      )))
+    });
+  }
+
+  const ninja = getPrevisioniNinja(estrazioni);
+  if (ninja?.risultati?.length) {
+    groups.push({
+      nome: "Metodo Ninja",
+      items: sortBySignalDateDesc(ninja.risultati.flatMap((item) => (
+        (item.previsioni || []).map((prev) => {
+          const numeri = prev.ambate || [];
+          const giocate = numeri.map((numero) => [numero]);
+          if (numeri.length >= 2) giocate.push(numeri.slice(0, 2));
+          return {
+            titolo: item.coppia,
+            sottotitolo: `Isotopo ${formatNumeroLabel(prev.isotopo)}`,
+            descrizione: "Gap centrale + chiusura armonica",
+            numeri,
+            ruote: [item.ruota1, item.ruota2],
+            giocate,
+            dataSegnale: item.dataSegnale,
+            dataSegnaleTesto: item.dataSegnaleTesto,
+            concorso: item.concorso,
+            colpiPassati: item.colpiPassati
+          };
+        })
+      )))
+    });
+  }
+
+  const doppio30 = getPrevisioniDoppio30(estrazioni);
+  if (doppio30?.risultati?.length) {
+    groups.push({
+      nome: "Metodo Doppio 30",
+      items: sortBySignalDateDesc(doppio30.risultati.flatMap((item) => (
+        (item.previsioni || []).map((prev) => ({
+          titolo: item.coppia,
+          sottotitolo: `Posizione ${prev.posizione}`,
+          descrizione: "Terzine del metodo",
+          numeri: uniqueNumbers([...(prev.terzina1 || []), ...(prev.terzina2 || [])]),
+          ruote: [item.ruota1, item.ruota2],
+          giocate: [prev.terzina1, prev.terzina2].filter(Boolean),
+          dataSegnale: item.dataSegnale,
+          dataSegnaleTesto: item.dataSegnaleTesto,
+          concorso: item.concorso,
+          colpiPassati: item.colpiPassati
+        }))
+      )))
+    });
+  }
+
+  const venere = getPrevisioniVenere(estrazioni);
+  if (venere?.previsioni?.length) {
+    groups.push({
+      nome: "Metodo Venere",
+      items: venere.previsioni.map((item) => ({
+        titolo: `Posizione ${item.posizione}`,
+        sottotitolo: `Ruota di gioco: ${venere.ruotaDiGioco || "Venezia"}`,
+        descrizione: "Ambi con capogiochi e abbinamenti",
+        numeri: [item.capogioco1, item.capogioco2, item.abbinamento1, item.abbinamento2],
+        ruote: [venere.ruotaDiGioco || "Venezia"],
+        giocate: item.ambi || [
+          [item.capogioco1, item.abbinamento1],
+          [item.capogioco2, item.abbinamento2]
+        ],
+        dataSegnale: venere.estrazioneRilevamento?.data,
+        dataSegnaleTesto: venere.estrazioneRilevamento?.dataTesto,
+        concorso: venere.estrazioneRilevamento?.concorso,
+        colpiPassati: 0
+      }))
+    });
+  }
+
+  return groups.filter((group) => group.items?.length);
+}
+
+function chooseBetterExactHit(current, candidate) {
+  if (!current) return candidate;
+  if (candidate.target !== current.target) return candidate.target > current.target ? candidate : current;
+  if (candidate.colpo !== current.colpo) return candidate.colpo < current.colpo ? candidate : current;
+  return candidate.matched.length > current.matched.length ? candidate : current;
+}
+
+function chooseBetterPartialHit(current, candidate) {
+  if (!current) return candidate;
+  if (candidate.matched.length !== current.matched.length) {
+    return candidate.matched.length > current.matched.length ? candidate : current;
+  }
+  if (candidate.target !== current.target) return candidate.target > current.target ? candidate : current;
+  return candidate.colpo < current.colpo ? candidate : current;
+}
+
+function evaluateGiocataItem(item, estrazioni) {
+  const ruote = item.ruote || [];
+  const giocate = (item.giocate || []).map((g) => normalizeGiocata(g)).filter((g) => g.length);
+  const signalDate = item.dataSegnale;
+
+  if (!signalDate || !ruote.length || !giocate.length) {
+    return {
+      tone: "neutral",
+      label: "Non verificata",
+      detail: "Dati insufficienti per controllare la previsione.",
+      meta: {
+        segnale: item.dataSegnaleTesto || "Non disponibile",
+        finestra: item.colpiMassimi ? `${item.colpiMassimi} colpi` : "Non definita",
+        avanzamento: Number.isFinite(item.colpiPassati) ? `${item.colpiPassati} colpi passati` : "N/D"
+      }
+    };
+  }
+
+  const drawsAfter = estrazioni
+    .filter((e) => e.data > signalDate)
+    .sort((a, b) => a.data.localeCompare(b.data));
+
+  const colpiMassimi = Number.isFinite(Number(item.colpiMassimi)) ? Number(item.colpiMassimi) : null;
+  const colpiPassati = Number.isFinite(Number(item.colpiPassati)) ? Number(item.colpiPassati) : drawsAfter.length;
+  const drawsWindow = colpiMassimi ? drawsAfter.slice(0, colpiMassimi) : drawsAfter;
+
+  let exactHit = null;
+  let partialHit = null;
+
+  drawsWindow.forEach((estrazione, index) => {
+    const colpo = index + 1;
+
+    ruote.forEach((ruota) => {
+      const numeriRuota = estrazione?.ruote?.[ruota] || [];
+
+      giocate.forEach((giocata) => {
+        const matched = giocata.filter((numero) => numeriRuota.includes(numero));
+        if (!matched.length) return;
+
+        const candidate = {
+          ruota,
+          giocata,
+          matched,
+          target: giocata.length,
+          colpo,
+          estrazione
+        };
+
+        if (matched.length >= giocata.length) {
+          exactHit = chooseBetterExactHit(exactHit, candidate);
+        } else {
+          partialHit = chooseBetterPartialHit(partialHit, candidate);
+        }
+      });
+    });
+  });
+
+  const formatHitDetail = (hit) => `${hit.estrazione.dataTesto} · ${hit.ruota} · ${hit.matched.map(formatNumeroLabel).join(" - ")}`;
+  const meta = {
+    segnale: item.dataSegnaleTesto || item.dataSegnale,
+    finestra: colpiMassimi ? `${colpiMassimi} colpi` : "Colpi non definiti",
+    avanzamento: colpiMassimi
+      ? `${Math.min(colpiPassati, colpiMassimi)}/${colpiMassimi} colpi`
+      : `${colpiPassati} colpi passati`
+  };
+
+  if (exactHit) {
+    const tipo = getTipoGiocataLabel(exactHit.target);
+    return {
+      tone: "success",
+      label: `Presa al ${exactHit.colpo}° colpo`,
+      detail: `${tipo} su ${formatHitDetail(exactHit)}`,
+      meta
+    };
+  }
+
+  if (colpiMassimi) {
+    const colpiRimasti = Math.max(0, colpiMassimi - Math.min(colpiPassati, colpiMassimi));
+
+    if (colpiPassati >= colpiMassimi) {
+      return {
+        tone: partialHit ? "partial" : "empty",
+        label: "Scaduta",
+        detail: partialHit
+          ? `Nessuna presa entro i colpi utili. Miglior parziale al ${partialHit.colpo}° colpo: ${partialHit.matched.length}/${partialHit.target} su ${partialHit.ruota}.`
+          : `Nessuna presa entro ${colpiMassimi} colpi di gioco.`,
+        meta
+      };
+    }
+
+    return {
+      tone: partialHit ? "partial" : "neutral",
+      label: "In corso",
+      detail: partialHit
+        ? `Miglior parziale al ${partialHit.colpo}° colpo: ${partialHit.matched.length}/${partialHit.target} su ${partialHit.ruota}. Rimasti ${colpiRimasti} colpi.`
+        : `Nessuna presa finora. Rimasti ${colpiRimasti} colpi di gioco.`,
+      meta
+    };
+  }
+
+  return {
+    tone: partialHit ? "partial" : "empty",
+    label: partialHit ? "Parziale" : "Non presa",
+    detail: partialHit
+      ? `Miglior parziale al ${partialHit.colpo}° colpo: ${partialHit.matched.length}/${partialHit.target} su ${partialHit.ruota}.`
+      : `Nessuna presa nelle estrazioni successive disponibili.`,
+    meta
+  };
+}
+
+function getGiocateMetodiConEsiti(estrazioni) {
+  return buildGiocateGroups(estrazioni).map((group) => ({
+    ...group,
+    items: group.items.map((item) => ({
+      ...item,
+      status: evaluateGiocataItem(item, estrazioni)
+    }))
+  }));
+}
+
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/api/estrazioni", async (req, res) => {
@@ -973,6 +1343,21 @@ app.get("/api/estrazioni", async (req, res) => {
   } catch (error) {
     console.error("Errore /api/estrazioni:", error);
     res.status(500).json({ errore: "Impossibile leggere le estrazioni", dettaglio: error.message });
+  }
+});
+
+app.get("/api/giocate-metodi", async (req, res) => {
+  try {
+    const estrazioni = await getAllEstrazioni();
+    const gruppi = getGiocateMetodiConEsiti(estrazioni);
+    res.json({
+      totaleGruppi: gruppi.length,
+      estrazionePiuRecente: estrazioni[0] || null,
+      gruppi
+    });
+  } catch (error) {
+    console.error("Errore /api/giocate-metodi:", error);
+    res.status(500).json({ errore: "Impossibile leggere le giocate dei metodi", dettaglio: error.message });
   }
 });
 
