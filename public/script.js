@@ -507,7 +507,10 @@ function renderBestMethodCard(title, entry) {
   if (!entry) {
     return `
       <div class="card featured-method-card muted-card">
-        <p class="method-overline">${title}</p>
+        <div class="featured-method-topline">
+          <span class="top-rank-badge">Top metodo</span>
+          <span class="month-badge">${title}</span>
+        </div>
         <h3>Nessun metodo disponibile</h3>
         <p class="muted">Non ci sono ancora segnali utili per questo periodo.</p>
       </div>
@@ -516,15 +519,21 @@ function renderBestMethodCard(title, entry) {
 
   return `
     <article class="card featured-method-card">
-      <p class="method-overline">${title}</p>
+      <div class="featured-method-topline">
+        <span class="top-rank-badge">Top metodo</span>
+        <span class="month-badge">${entry.monthLabel}</span>
+      </div>
+      <p class="featured-method-context">${title}</p>
       <h3>${entry.nome}</h3>
-      <p class="muted">${entry.monthLabel}</p>
       <div class="featured-stats-grid">
         <div class="mini-stat"><strong>Affidabilità</strong><span>${formatPercent(entry.stats?.reliability)}</span></div>
         <div class="mini-stat"><strong>Prese</strong><span>${entry.stats?.exactHits || 0} / ${entry.stats?.completedSignals || 0}</span></div>
         <div class="mini-stat"><strong>Colpo medio</strong><span>${formatAvgColpo(entry.stats?.averageHitColpo)}</span></div>
       </div>
-      <a class="method-button" href="${entry.path}">Apri metodo</a>
+      <div class="featured-method-footer">
+        <p class="featured-method-note">Periodo analizzato: ${entry.monthLabel}</p>
+        <a class="method-button" href="${entry.path}">Apri metodo</a>
+      </div>
     </article>
   `;
 }
