@@ -442,14 +442,20 @@ function renderMetodi(groups) {
         })
         .join("");
 
+      const reliabilityText = formatPercent(group.reliability);
+      const rankText = group.rank ? `${group.rank}° posto` : "Storico";
       return `
-        <div class="card method-summary-card">
+        <div class="card method-summary-card ${group.podiumClass || ""}">
           <div class="method-summary-header">
             <div>
               <p class="method-overline">Tipo di metodo</p>
               <h3>${group.nome}</h3>
             </div>
-            <span class="method-header-chip">Giocate attive</span>
+            <span class="method-header-chip">${group.podiumLabel || "Giocate attive"}</span>
+          </div>
+          <div class="method-podium-meta">
+            <span class="method-rank-pill">${rankText}</span>
+            <span class="method-reliability-pill">Affidabilità ${reliabilityText}</span>
           </div>
           ${entries}
         </div>

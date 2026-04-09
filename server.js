@@ -1398,14 +1398,66 @@ function evaluateGiocataItem(item, estrazioni) {
   };
 }
 
+function getPodiumMeta(index) {
+  if (index === 0) {
+    return { podiumClass: "podium-card--gold", podiumLabel: "1° per affidabilità" };
+  }
+  if (index === 1) {
+    return { podiumClass: "podium-card--silver", podiumLabel: "2° per affidabilità" };
+  }
+  if (index === 2) {
+    return { podiumClass: "podium-card--bronze", podiumLabel: "3° per affidabilità" };
+  }
+  return { podiumClass: "", podiumLabel: "Storico" };
+}
+
+function rankMethodsByReliability(methods = []) {
+  return [...methods].sort((a, b) => {
+    const aReliability = a.stats?.reliability ?? -1;
+    const bReliability = b.stats?.reliability ?? -1;
+    if (bReliability !== aReliability) return bReliability - aReliability;
+    const aHits = a.stats?.exactHits || 0;
+    const bHits = b.stats?.exactHits || 0;
+    if (bHits !== aHits) return bHits - aHits;
+    const aColpo = a.stats?.averageHitColpo ?? 999;
+    const bColpo = b.stats?.averageHitColpo ?? 999;
+    if (aColpo !== bColpo) return aColpo - bColpo;
+    return (b.stats?.completedSignals || 0) - (a.stats?.completedSignals || 0);
+  });
+}
+
 function getGiocateMetodiConEsiti(estrazioni) {
-  return buildGiocateGroups(estrazioni).map((group) => ({
-    ...group,
-    items: group.items.map((item) => ({
-      ...item,
-      status: evaluateGiocataItem(item, estrazioni)
-    }))
-  }));
+  const statsPayload = buildMethodStatsPayload(estrazioni);
+  const rankedMethods = rankMethodsByReliability(statsPayload.methods || []);
+  const rankMap = new Map(
+    rankedMethods.map((method, index) => [
+      method.nome,
+      {
+        rank: index + 1,
+        reliability: method.stats?.reliability ?? null,
+        ...getPodiumMeta(index)
+      }
+    ])
+  );
+
+  return buildGiocateGroups(estrazioni)
+    .map((group) => {
+      const rankInfo = rankMap.get(group.nome) || { rank: null, reliability: null, podiumClass: "", podiumLabel: "Storico" };
+      return {
+        ...group,
+        ...rankInfo,
+        items: group.items.map((item) => ({
+          ...item,
+          status: evaluateGiocataItem(item, estrazioni)
+        }))
+      };
+    })
+    .sort((a, b) => {
+      const aRank = a.rank ?? 999;
+      const bRank = b.rank ?? 999;
+      if (aRank !== bRank) return aRank - bRank;
+      return (a.nome || "").localeCompare(b.nome || "", "it");
+    });
 }
 
 function getMonthKeyFromDate(date) {
@@ -1695,18 +1747,24 @@ function buildMethodStatsPayload(estrazioni) {
     return acc;
   }, {});
 
-  const methods = Object.entries(METHOD_META).map(([nome, meta]) => {
-    const items = grouped[nome] || [];
-    return {
-      nome,
-      ...meta,
-      stats: computeMethodStats(items),
-      monthly: {
-        current: computeMethodStats(items, getMonthKeyFromDate(estrazioni[0]?.data)),
-        previous: computeMethodStats(items, getPreviousMonthKey(getMonthKeyFromDate(estrazioni[0]?.data)))
-      }
-    };
-  });
+  const methods = rankMethodsByReliability(
+    Object.entries(METHOD_META).map(([nome, meta]) => {
+      const items = grouped[nome] || [];
+      return {
+        nome,
+        ...meta,
+        stats: computeMethodStats(items),
+        monthly: {
+          current: computeMethodStats(items, getMonthKeyFromDate(estrazioni[0]?.data)),
+          previous: computeMethodStats(items, getPreviousMonthKey(getMonthKeyFromDate(estrazioni[0]?.data)))
+        }
+      };
+    })
+  ).map((method, index) => ({
+    ...method,
+    rank: index + 1,
+    ...getPodiumMeta(index)
+  }));
 
   const currentMonthKey = getMonthKeyFromDate(estrazioni[0]?.data);
   const previousMonthKey = getPreviousMonthKey(currentMonthKey);
