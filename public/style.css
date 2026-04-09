@@ -234,3 +234,155 @@ pre {
   flex-wrap: wrap;
   margin-bottom: 16px;
 }
+
+.hero-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.secondary-button {
+  background: #ffd166;
+  color: #222;
+}
+
+.camera-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 18px;
+  margin: 20px 0;
+}
+
+.camera-actions,
+.ocr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.camera-preview {
+  width: 100%;
+  min-height: 240px;
+  background: #0f172a;
+  border-radius: 16px;
+  margin-top: 14px;
+  object-fit: cover;
+}
+
+.hidden {
+  display: none;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0;
+  color: #666;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #d6dce5;
+}
+
+.upload-box {
+  display: block;
+  padding: 16px;
+  border: 2px dashed #b8c4d8;
+  border-radius: 14px;
+  background: #f8fbff;
+  cursor: pointer;
+}
+
+#immagineSchedina {
+  margin-top: 12px;
+}
+
+.big-textarea {
+  width: 100%;
+  min-height: 260px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid #d1d9e6;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 15px;
+  margin-bottom: 14px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.form-grid input,
+.form-grid select,
+.stakes-grid input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d1d9e6;
+  border-radius: 12px;
+  margin-top: 6px;
+}
+
+.wheel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin: 12px 0 20px;
+}
+
+.wheel-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #d8e1ef;
+  background: #f8fbff;
+  border-radius: 12px;
+}
+
+.stakes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.stake-card {
+  padding: 12px;
+  border-radius: 14px;
+  background: #f8fbff;
+  border: 1px solid #d8e1ef;
+}
+
+.result-highlight {
+  border-left: 6px solid #0d3b66;
+}
+
+.success-card {
+  background: #edfdf5;
+}
+
+.neutral-card {
+  background: #f8fbff;
+}
+
+.winning-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid #e5e7eb;
+}
+
+.winning-row:first-of-type {
+  margin-top: 12px;
+}

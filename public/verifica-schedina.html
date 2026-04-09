@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Verifica schedina Lotto</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="hero">
+    <nav class="nav">
+      <a href="/">Home</a>
+      <a href="/giocate.html">Giocate</a>
+      <a href="/verifica-schedina.html" class="active">Verifica schedina</a>
+      <a href="/metodi.html">Metodi</a>
+      <a href="/fai-3-fai-4.html">Fai 3 Fai 4</a>
+    </nav>
+
+    <h1>Verifica schedina Lotto</h1>
+    <p>Scansiona la schedina oppure inserisci il testo e controlla subito se risulta vincente.</p>
+  </header>
+
+  <main class="container">
+    <section class="card note">
+      <strong>Come funziona:</strong> la pagina può leggere una foto della schedina oppure il testo incollato manualmente, prova a riconoscere ruote, numeri e importi, e poi calcola la vincita sul Lotto base. Se qualcosa viene letto male, puoi correggere i campi prima della verifica.
+    </section>
+
+    <section class="camera-layout">
+      <div class="card">
+        <div class="section-title-row">
+          <div>
+            <h2>Scansione</h2>
+            <p class="muted">Su smartphone prova prima la fotocamera posteriore, su desktop la frontale.</p>
+          </div>
+        </div>
+
+        <div class="camera-actions">
+          <button id="avviaCamera" type="button">Apri fotocamera</button>
+          <button id="scattaFoto" type="button" disabled>Scatta e leggi</button>
+          <button id="fermaCamera" type="button" disabled>Chiudi fotocamera</button>
+        </div>
+
+        <video id="cameraPreview" class="camera-preview" playsinline autoplay muted></video>
+        <canvas id="cameraCanvas" class="hidden"></canvas>
+
+        <div class="divider"><span>oppure</span></div>
+
+        <label class="upload-box" for="immagineSchedina">
+          <strong>Carica foto schedina</strong>
+          <span class="muted">Puoi anche scegliere un'immagine dal telefono o dal PC.</span>
+        </label>
+        <input id="immagineSchedina" type="file" accept="image/*" capture="environment" />
+
+        <div class="ocr-actions">
+          <button id="leggiImmagine" type="button">Leggi immagine caricata</button>
+          <div id="statoOCR" class="muted"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Testo schedina</h2>
+        <p class="muted">Se preferisci, incolla direttamente il testo della schedina.</p>
+        <textarea id="testoSchedina" class="big-textarea" placeholder="Incolla qui il testo della schedina oppure usa la fotocamera..."></textarea>
+        <div class="camera-actions">
+          <button id="analizzaTesto" type="button">Analizza testo</button>
+          <button id="pulisciTesto" type="button" class="secondary-button">Pulisci</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-title-row">
+        <div>
+          <h2>Dati da verificare</h2>
+          <p class="muted">Controlla i campi riconosciuti e correggili se serve.</p>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div>
+          <label for="estrazioneSelect">Estrazione da controllare</label>
+          <select id="estrazioneSelect"></select>
+        </div>
+        <div>
+          <label for="numeriGiocati">Numeri giocati</label>
+          <input id="numeriGiocati" type="text" placeholder="Es. 12 34 56" />
+        </div>
+      </div>
+
+      <div>
+        <p><strong>Ruote</strong></p>
+        <div id="ruoteContainer" class="wheel-grid"></div>
+      </div>
+
+      <div class="stakes-grid">
+        <div class="stake-card">
+          <label for="importoEstratto">Estratto €</label>
+          <input id="importoEstratto" type="number" min="0" step="0.01" placeholder="0" />
+        </div>
+        <div class="stake-card">
+          <label for="importoAmbo">Ambo €</label>
+          <input id="importoAmbo" type="number" min="0" step="0.01" placeholder="0" />
+        </div>
+        <div class="stake-card">
+          <label for="importoTerno">Terno €</label>
+          <input id="importoTerno" type="number" min="0" step="0.01" placeholder="0" />
+        </div>
+        <div class="stake-card">
+          <label for="importoQuaterna">Quaterna €</label>
+          <input id="importoQuaterna" type="number" min="0" step="0.01" placeholder="0" />
+        </div>
+        <div class="stake-card">
+          <label for="importoCinquina">Cinquina €</label>
+          <input id="importoCinquina" type="number" min="0" step="0.01" placeholder="0" />
+        </div>
+      </div>
+
+      <div class="camera-actions">
+        <button id="verificaSchedina" type="button">Verifica vincita</button>
+      </div>
+    </section>
+
+    <section id="risultatoVerifica" class="cards"></section>
+
+    <section class="card note">
+      <strong>Nota:</strong> questo controllo calcola la vincita del Lotto base su estratto, ambo, terno, quaterna e cinquina. Non include Numero Oro, Lotto Più, Simbolotto, Ambetto o Estratto determinato.
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="verifica-schedina.js"></script>
+</body>
+</html>
