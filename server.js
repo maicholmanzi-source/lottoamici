@@ -1748,8 +1748,8 @@ app.get("/api/metodo-venere", async (req, res) => {
     });
   }
 });
-app.listen(PORT, () => {
-  console.log(`Server avviato su http://localhost:${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`Server avviato su http://${HOST}:${PORT}`);
 });
 =======
     res.json(getPrevisioniDonPedro(estrazioni));
