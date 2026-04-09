@@ -18,7 +18,9 @@ function renderPills(numeri) {
 }
 
 async function caricaEstrazioni() {
-  const ruota = ruotaSelect.value;
+  if (!listaEstrazioni) return;
+
+  const ruota = ruotaSelect?.value || "";
 
   try {
     let response;
@@ -42,6 +44,8 @@ async function caricaEstrazioni() {
 }
 
 function renderEstrazioni(data, ruotaSelezionata) {
+  if (!listaEstrazioni) return;
+
   listaEstrazioni.innerHTML = "";
 
   if (ruotaSelezionata) {
@@ -263,6 +267,8 @@ function limitItems(items, max = 4) {
 }
 
 function renderMetodi(groups) {
+  if (!giocateMetodi) return;
+
   if (!groups.length) {
     giocateMetodi.innerHTML = `<div class="card">Nessuna giocata disponibile dai metodi.</div>`;
     return;
@@ -292,6 +298,8 @@ function renderMetodi(groups) {
 }
 
 async function caricaGiocateMetodi() {
+  if (!giocateMetodi) return;
+
   giocateMetodi.innerHTML = `<div class="card">Caricamento giocate...</div>`;
 
   const endpoints = [
@@ -320,8 +328,13 @@ async function caricaGiocateMetodi() {
   renderMetodi(validGroups);
 }
 
-btnRicarica.addEventListener("click", caricaEstrazioni);
-ruotaSelect.addEventListener("change", caricaEstrazioni);
+if (btnRicarica) {
+  btnRicarica.addEventListener("click", caricaEstrazioni);
+}
+
+if (ruotaSelect) {
+  ruotaSelect.addEventListener("change", caricaEstrazioni);
+}
 
 if (btnAggiornaMetodi) {
   btnAggiornaMetodi.addEventListener("click", caricaGiocateMetodi);
