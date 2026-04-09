@@ -18,7 +18,7 @@ body {
   overflow: hidden;
   background:
     linear-gradient(rgba(13, 59, 102, 0.68), rgba(13, 59, 102, 0.62)),
-    url("/lotto-home-bg.jpg") center center / cover no-repeat;
+    url("/lotto-home-bg.png") center center / cover no-repeat;
   color: white;
 }
 
