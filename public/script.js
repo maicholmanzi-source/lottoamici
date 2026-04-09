@@ -546,15 +546,31 @@ function renderMethodsStats(methods = []) {
     return;
   }
 
-  methodsStatsGrid.innerHTML = methods
-    .map((method) => `
-      <article class="method-card stats-card">
+  const rankedMethods = [...methods].sort((a, b) => {
+    const aReliability = a.stats?.reliability ?? -1;
+    const bReliability = b.stats?.reliability ?? -1;
+    if (bReliability !== aReliability) return bReliability - aReliability;
+    const aHits = a.stats?.exactHits || 0;
+    const bHits = b.stats?.exactHits || 0;
+    if (bHits !== aHits) return bHits - aHits;
+    const aColpo = a.stats?.averageHitColpo ?? 999;
+    const bColpo = b.stats?.averageHitColpo ?? 999;
+    if (aColpo !== bColpo) return aColpo - bColpo;
+    return (b.stats?.completedSignals || 0) - (a.stats?.completedSignals || 0);
+  });
+
+  methodsStatsGrid.innerHTML = rankedMethods
+    .map((method, index) => {
+      const podiumClass = index === 0 ? " stats-card--gold" : index === 1 ? " stats-card--silver" : index === 2 ? " stats-card--bronze" : "";
+      const podiumLabel = index === 0 ? "1° per affidabilità" : index === 1 ? "2° per affidabilità" : index === 2 ? "3° per affidabilità" : "Storico";
+      return `
+      <article class="method-card stats-card${podiumClass}">
         <div class="method-summary-header">
           <div>
             <p class="method-overline">${method.focus || "Metodo"}</p>
             <h3>${method.nome}</h3>
           </div>
-          <span class="method-header-chip">Storico</span>
+          <span class="method-header-chip">${podiumLabel}</span>
         </div>
         <p>${method.descrizione || ""}</p>
         <div class="stats-grid">
@@ -570,7 +586,8 @@ function renderMethodsStats(methods = []) {
         </div>
         <a class="method-button" href="${method.path}">Apri ${method.shortName || method.nome}</a>
       </article>
-    `)
+    `;
+    })
     .join("");
 }
 
@@ -591,7 +608,7 @@ async function caricaStatisticheMetodi() {
       renderMethodsStats(data.methods || []);
       if (methodsStatsInfo) {
         const updated = data.updatedAt ? `${data.updatedAt.dataTesto} (concorso ${data.updatedAt.concorso})` : "dato non disponibile";
-        methodsStatsInfo.textContent = `Statistiche calcolate sullo storico disponibile. Ultima estrazione usata: ${updated}.`;
+        methodsStatsInfo.textContent = `Statistiche calcolate sullo storico disponibile e ordinate per affidabilità. Ultima estrazione usata: ${updated}.`;
       }
     }
   } catch (error) {
