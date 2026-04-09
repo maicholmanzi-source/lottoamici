@@ -169,6 +169,72 @@ const MONTHS = {
   dicembre: 12
 };
 
+const METHOD_META = {
+  "Metodo Azzerati": {
+    slug: "azzerati",
+    shortName: "Azzerati",
+    path: "/metodo-azzerati.html",
+    descrizione: "Calcola le previsioni dall'ultima estrazione del mese chiuso usando il numero zerato e il successivo.",
+    focus: "Ambate"
+  },
+  "Metodo Monco": {
+    slug: "monco",
+    shortName: "Monco",
+    path: "/metodo-monco.html",
+    descrizione: "Cerca gli isotopi sulle ruote consecutive e applica la tabella storica del Monco.",
+    focus: "Ambate"
+  },
+  "Metodo 9 e 90": {
+    slug: "9-90",
+    shortName: "9 e 90",
+    path: "/metodo-9-90.html",
+    descrizione: "Quando la figura del secondo estratto è 9 propone 9 e 90 con relativi abbinamenti.",
+    focus: "Ambate"
+  },
+  "Metodo Isotopi": {
+    slug: "isotopi",
+    shortName: "Isotopi",
+    path: "/metodo-isotopi.html",
+    descrizione: "Rileva isotopi su ruote consecutive e gioca il complementare a 91.",
+    focus: "Ambate"
+  },
+  "Metodo Gemelli": {
+    slug: "gemelli",
+    shortName: "Gemelli",
+    path: "/metodo-gemelli.html",
+    descrizione: "Individua gemelli in posizione omologa e ricava due ambate del metodo.",
+    focus: "Ambate"
+  },
+  "Metodo Don Pedro": {
+    slug: "don-pedro",
+    shortName: "Don Pedro",
+    path: "/metodo-don-pedro.html",
+    descrizione: "Parte dagli isotopi perfetti e costruisce ambi con capogioco e abbinamenti fissi.",
+    focus: "Ambi"
+  },
+  "Metodo Ninja": {
+    slug: "ninja",
+    shortName: "Ninja",
+    path: "/metodo-ninja.html",
+    descrizione: "Usa isotopo, gap centrale e chiusura armonica per ottenere ambate e ambo.",
+    focus: "Ambate + ambo"
+  },
+  "Metodo Doppio 30": {
+    slug: "doppio-30",
+    shortName: "Doppio 30",
+    path: "/metodo-doppio-30.html",
+    descrizione: "Scatta quando compare il 30 in pari posizione e restituisce terzine derivate.",
+    focus: "Terzine"
+  },
+  "Metodo Venere": {
+    slug: "venere",
+    shortName: "Venere",
+    path: "/metodo-venere.html",
+    descrizione: "Lavora sulla coppia Venezia-Roma e propone ambi da capogiochi e vertibili.",
+    focus: "Ambi"
+  }
+};
+
 function normalizeText(text) {
   return text.replace(/\u00a0/g, " ").replace(/\r/g, " ").replace(/\n+/g, " ").replace(/\s+/g, " ").trim();
 }
@@ -1284,6 +1350,8 @@ function evaluateGiocataItem(item, estrazioni) {
     const tipo = getTipoGiocataLabel(exactHit.target);
     return {
       tone: "success",
+      outcome: "hit",
+      hitColpo: exactHit.colpo,
       label: `Presa al ${exactHit.colpo}° colpo`,
       detail: `${tipo} su ${formatHitDetail(exactHit)}`,
       meta
@@ -1296,6 +1364,8 @@ function evaluateGiocataItem(item, estrazioni) {
     if (colpiPassati >= colpiMassimi) {
       return {
         tone: partialHit ? "partial" : "empty",
+        outcome: partialHit ? "expired" : "miss",
+        hitColpo: partialHit ? partialHit.colpo : null,
         label: "Scaduta",
         detail: partialHit
           ? `Nessuna presa entro i colpi utili. Miglior parziale al ${partialHit.colpo}° colpo: ${partialHit.matched.length}/${partialHit.target} su ${partialHit.ruota}.`
@@ -1306,6 +1376,8 @@ function evaluateGiocataItem(item, estrazioni) {
 
     return {
       tone: partialHit ? "partial" : "neutral",
+      outcome: "ongoing",
+      hitColpo: partialHit ? partialHit.colpo : null,
       label: "In corso",
       detail: partialHit
         ? `Miglior parziale al ${partialHit.colpo}° colpo: ${partialHit.matched.length}/${partialHit.target} su ${partialHit.ruota}. Rimasti ${colpiRimasti} colpi.`
@@ -1316,6 +1388,8 @@ function evaluateGiocataItem(item, estrazioni) {
 
   return {
     tone: partialHit ? "partial" : "empty",
+    outcome: partialHit ? "partial" : "miss",
+    hitColpo: partialHit ? partialHit.colpo : null,
     label: partialHit ? "Parziale" : "Non presa",
     detail: partialHit
       ? `Miglior parziale al ${partialHit.colpo}° colpo: ${partialHit.matched.length}/${partialHit.target} su ${partialHit.ruota}.`
@@ -1332,6 +1406,350 @@ function getGiocateMetodiConEsiti(estrazioni) {
       status: evaluateGiocataItem(item, estrazioni)
     }))
   }));
+}
+
+function getMonthKeyFromDate(date) {
+  return String(date || "").slice(0, 7);
+}
+
+function formatMonthKey(monthKey) {
+  if (!monthKey) return "Periodo non disponibile";
+  const [year, month] = monthKey.split("-");
+  const monthName = Object.entries(MONTHS).find(([, value]) => String(value).padStart(2, "0") === month)?.[0] || month;
+  return `${monthName.charAt(0).toUpperCase()}${monthName.slice(1)} ${year}`;
+}
+
+function getPreviousMonthKey(monthKey) {
+  if (!monthKey) return null;
+  const [year, month] = monthKey.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, 1));
+  date.setUTCMonth(date.getUTCMonth() - 1);
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+function buildHistoricalMethodSignals(estrazioni) {
+  const signals = [];
+  const currentMonthKey = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
+  const completedMonthKeys = [...new Set(estrazioni.map((e) => getMonthKeyFromDate(e.data)))]
+    .filter((key) => key && key !== currentMonthKey)
+    .sort();
+
+  completedMonthKeys.forEach((monthKey) => {
+    const estrazione = getLastExtractionOfMonth(estrazioni, monthKey);
+    if (!estrazione) return;
+
+    RUOTE.forEach((ruota) => {
+      const cinquina = estrazione.ruote?.[ruota] || [];
+      const zerati = cinquina.map((numero, index) => ({ numero, index })).filter((item) => item.numero % 10 === 0);
+      if (zerati.length !== 1) return;
+      const zerato = zerati[0];
+      if (zerato.index === 4) return;
+      const successivo = cinquina[zerato.index + 1];
+      const somma = zerato.numero + successivo;
+      const ambata1 = fuori90(somma);
+      const ambata2 = ambataDiDecina(ambata1);
+      signals.push({
+        metodo: "Metodo Azzerati",
+        titolo: ruota,
+        sottotitolo: `Concorso ${estrazione.concorso}`,
+        descrizione: `Ambate su ${ruota}`,
+        numeri: [ambata1, ambata2],
+        ruote: [ruota],
+        giocate: [[ambata1], [ambata2]],
+        dataSegnale: estrazione.data,
+        dataSegnaleTesto: estrazione.dataTesto,
+        concorso: estrazione.concorso,
+        colpiMassimi: 10,
+        colpiPassati: countDrawsAfter(estrazioni, estrazione.data)
+      });
+    });
+  });
+
+  estrazioni.forEach((estrazione) => {
+    RUOTE.forEach((ruota) => {
+      const cinquina = estrazione.ruote?.[ruota] || [];
+      if (cinquina.length !== 5) return;
+      const secondo = cinquina[1];
+      const figuraSecondo = getFigura(secondo);
+      if (figuraSecondo !== 9) return;
+      signals.push({
+        metodo: "Metodo 9 e 90",
+        titolo: ruota,
+        sottotitolo: `Concorso ${estrazione.concorso}`,
+        descrizione: `Ambate su ${ruota}`,
+        numeri: [9, 90],
+        ruote: [ruota],
+        giocate: [[9], [90]],
+        dataSegnale: estrazione.data,
+        dataSegnaleTesto: estrazione.dataTesto,
+        concorso: estrazione.concorso,
+        colpiPassati: countDrawsAfter(estrazioni, estrazione.data)
+      });
+    });
+
+    const venezia = estrazione.ruote?.["Venezia"] || [];
+    const roma = estrazione.ruote?.["Roma"] || [];
+    if (venezia.length === 5 && roma.length === 5) {
+      for (let i = 0; i < 5; i++) {
+        const numeroVenezia = venezia[i];
+        const numeroRoma = roma[i];
+        const capogioco1 = fuori90(numeroVenezia + numeroRoma);
+        let differenza = Math.abs(numeroVenezia - numeroRoma);
+        if (differenza === 0) differenza = 90;
+        const capogioco2 = normalizeLottoNumber(differenza);
+        const abbinamento1 = getVertibile(capogioco1);
+        const abbinamento2 = getVertibile(capogioco2);
+        signals.push({
+          metodo: "Metodo Venere",
+          titolo: `Posizione ${i + 1}`,
+          sottotitolo: `Concorso ${estrazione.concorso}`,
+          descrizione: "Ambi Venezia-Roma del metodo",
+          numeri: [capogioco1, capogioco2, abbinamento1, abbinamento2],
+          ruote: ["Venezia"],
+          giocate: [[capogioco1, abbinamento1], [capogioco2, abbinamento2]],
+          dataSegnale: estrazione.data,
+          dataSegnaleTesto: estrazione.dataTesto,
+          concorso: estrazione.concorso,
+          colpiPassati: countDrawsAfter(estrazioni, estrazione.data)
+        });
+      }
+    }
+
+    COPPIE_MONCO.forEach(([ruota1, ruota2]) => {
+      const cinquina1 = estrazione.ruote?.[ruota1] || [];
+      const cinquina2 = estrazione.ruote?.[ruota2] || [];
+      if (cinquina1.length !== 5 || cinquina2.length !== 5) return;
+      const isotopi = findIsotopi(cinquina1, cinquina2);
+      if (!isotopi.length) return;
+      const colpiPassati = countDrawsAfter(estrazioni, estrazione.data);
+
+      isotopi.forEach((item) => {
+        const tabella = MONCO_TABLE[item.numero] || { ambate: [] };
+        const capogioco = fuori90(item.numero + item.numero);
+        const donPedroAbbinamenti = [15, 30, 45];
+        const gapCentrale = Math.round((item.numero + getVertibile(item.numero)) / 2);
+        const chiusuraArmonica = getVertibile(gapCentrale);
+
+        signals.push({
+          metodo: "Metodo Monco",
+          titolo: `${ruota1} - ${ruota2}`,
+          sottotitolo: `Isotopo ${formatNumeroLabel(item.numero)}`,
+          descrizione: "Ambate del Monco",
+          numeri: tabella.ambate || [],
+          ruote: [ruota1, ruota2],
+          giocate: (tabella.ambate || []).map((numero) => [numero]),
+          dataSegnale: estrazione.data,
+          dataSegnaleTesto: estrazione.dataTesto,
+          concorso: estrazione.concorso,
+          colpiPassati
+        });
+
+        signals.push({
+          metodo: "Metodo Isotopi",
+          titolo: `${ruota1} - ${ruota2}`,
+          sottotitolo: `Segnale ${estrazione.dataTesto}`,
+          descrizione: `Ambata su ${ruota1} - ${ruota2}`,
+          numeri: [91 - item.numero],
+          ruote: [ruota1, ruota2],
+          giocate: [[91 - item.numero]],
+          dataSegnale: estrazione.data,
+          dataSegnaleTesto: estrazione.dataTesto,
+          concorso: estrazione.concorso,
+          colpiMassimi: 6,
+          colpiPassati
+        });
+
+        signals.push({
+          metodo: "Metodo Don Pedro",
+          titolo: `${ruota1} - ${ruota2}`,
+          sottotitolo: `Isotopo ${formatNumeroLabel(item.numero)}`,
+          descrizione: "Ambi con capogioco fisso",
+          numeri: [capogioco, ...donPedroAbbinamenti],
+          ruote: [ruota1, ruota2],
+          giocate: donPedroAbbinamenti.map((abbinamento) => [capogioco, abbinamento]),
+          dataSegnale: estrazione.data,
+          dataSegnaleTesto: estrazione.dataTesto,
+          concorso: estrazione.concorso,
+          colpiPassati
+        });
+
+        signals.push({
+          metodo: "Metodo Ninja",
+          titolo: `${ruota1} - ${ruota2}`,
+          sottotitolo: `Isotopo ${formatNumeroLabel(item.numero)}`,
+          descrizione: "Gap centrale + chiusura armonica",
+          numeri: [gapCentrale, chiusuraArmonica],
+          ruote: [ruota1, ruota2],
+          giocate: [[gapCentrale], [chiusuraArmonica], [gapCentrale, chiusuraArmonica]],
+          dataSegnale: estrazione.data,
+          dataSegnaleTesto: estrazione.dataTesto,
+          concorso: estrazione.concorso,
+          colpiPassati
+        });
+      });
+
+      const casi = [];
+      for (let i = 0; i < 5; i++) {
+        const n1 = cinquina1[i];
+        const n2 = cinquina2[i];
+        if (n1 === 30 && n2 !== 30) {
+          casi.push({ posizione: i + 1, ruota30: ruota1, ruotaBase: ruota2, numeroBase: n2 });
+        } else if (n2 === 30 && n1 !== 30) {
+          casi.push({ posizione: i + 1, ruota30: ruota2, ruotaBase: ruota1, numeroBase: n1 });
+        }
+      }
+      casi.forEach((item) => {
+        const differenza = normalizeLottoNumber(Math.abs(item.numeroBase - 30));
+        const vertibileDifferenza = getVertibile(differenza);
+        const vertibileBase = getVertibile(item.numeroBase);
+        const unitaBase = item.numeroBase % 10 === 0 ? 90 : item.numeroBase % 10;
+        const decinaUnitaBase = unitaBase === 90 ? 90 : unitaBase * 10;
+        const terzina1 = uniqueNumbers([normalizeLottoNumber(unitaBase), normalizeLottoNumber(differenza), normalizeLottoNumber(item.numeroBase)]);
+        const terzina2 = uniqueNumbers([normalizeLottoNumber(decinaUnitaBase), normalizeLottoNumber(vertibileDifferenza), normalizeLottoNumber(vertibileBase)]);
+        signals.push({
+          metodo: "Metodo Doppio 30",
+          titolo: `${ruota1} - ${ruota2}`,
+          sottotitolo: `Posizione ${item.posizione}`,
+          descrizione: "Terzine del metodo",
+          numeri: uniqueNumbers([...terzina1, ...terzina2]),
+          ruote: [ruota1, ruota2],
+          giocate: [terzina1, terzina2],
+          dataSegnale: estrazione.data,
+          dataSegnaleTesto: estrazione.dataTesto,
+          concorso: estrazione.concorso,
+          colpiPassati
+        });
+      });
+    });
+
+    COPPIE_GEMELLI.forEach(([ruota1, ruota2]) => {
+      const cinquina1 = estrazione.ruote?.[ruota1] || [];
+      const cinquina2 = estrazione.ruote?.[ruota2] || [];
+      if (cinquina1.length !== 5 || cinquina2.length !== 5) return;
+      const gemelli = findGemelliIsotopi(cinquina1, cinquina2);
+      if (!gemelli.length) return;
+      const colpiPassati = countDrawsAfter(estrazioni, estrazione.data);
+      gemelli.forEach((item) => {
+        const calcolo = calcolaAmbateGemelli(item.gemello1, item.gemello2);
+        signals.push({
+          metodo: "Metodo Gemelli",
+          titolo: `${ruota1} - ${ruota2}`,
+          sottotitolo: `Segnale ${estrazione.dataTesto}`,
+          descrizione: "Ambate del metodo",
+          numeri: [calcolo.ambata1, calcolo.ambata2],
+          ruote: [ruota1, ruota2],
+          giocate: [[calcolo.ambata1], [calcolo.ambata2]],
+          dataSegnale: estrazione.data,
+          dataSegnaleTesto: estrazione.dataTesto,
+          concorso: estrazione.concorso,
+          colpiPassati
+        });
+      });
+    });
+  });
+
+  return signals;
+}
+
+function computeMethodStats(items = [], monthKey = null) {
+  const filtered = monthKey ? items.filter((item) => getMonthKeyFromDate(item.dataSegnale) === monthKey) : items;
+  const totalSignals = filtered.length;
+  const exactHits = filtered.filter((item) => item.status?.outcome === "hit");
+  const ongoing = filtered.filter((item) => item.status?.outcome === "ongoing").length;
+  const partial = filtered.filter((item) => item.status?.outcome === "partial").length;
+  const expired = filtered.filter((item) => item.status?.outcome === "expired" || item.status?.outcome === "miss").length;
+  const notVerified = filtered.filter((item) => item.status?.outcome === "unknown").length;
+  const completedSignals = totalSignals - ongoing - notVerified;
+  const reliability = completedSignals > 0 ? (exactHits.length / completedSignals) * 100 : null;
+  const averageHitColpo = exactHits.length
+    ? exactHits.reduce((sum, item) => sum + (item.status?.hitColpo || 0), 0) / exactHits.length
+    : null;
+  const firstDate = filtered.length ? [...filtered].sort((a, b) => a.dataSegnale.localeCompare(b.dataSegnale))[0].dataSegnale : null;
+  const lastDate = filtered.length ? [...filtered].sort((a, b) => b.dataSegnale.localeCompare(a.dataSegnale))[0].dataSegnale : null;
+
+  return {
+    totalSignals,
+    completedSignals,
+    exactHits: exactHits.length,
+    ongoing,
+    partial,
+    expired,
+    notVerified,
+    reliability,
+    averageHitColpo,
+    firstDate,
+    lastDate,
+    periodLabel: firstDate && lastDate ? `${firstDate} → ${lastDate}` : "Periodo non disponibile"
+  };
+}
+
+function buildMethodStatsPayload(estrazioni) {
+  const historicalSignals = buildHistoricalMethodSignals(estrazioni).map((item) => ({
+    ...item,
+    status: evaluateGiocataItem(item, estrazioni)
+  }));
+
+  const grouped = historicalSignals.reduce((acc, item) => {
+    acc[item.metodo] ||= [];
+    acc[item.metodo].push(item);
+    return acc;
+  }, {});
+
+  const methods = Object.entries(METHOD_META).map(([nome, meta]) => {
+    const items = grouped[nome] || [];
+    return {
+      nome,
+      ...meta,
+      stats: computeMethodStats(items),
+      monthly: {
+        current: computeMethodStats(items, getMonthKeyFromDate(estrazioni[0]?.data)),
+        previous: computeMethodStats(items, getPreviousMonthKey(getMonthKeyFromDate(estrazioni[0]?.data)))
+      }
+    };
+  });
+
+  const currentMonthKey = getMonthKeyFromDate(estrazioni[0]?.data);
+  const previousMonthKey = getPreviousMonthKey(currentMonthKey);
+
+  function pickBest(monthKey) {
+    const ranked = methods
+      .map((method) => ({ method, stats: computeMethodStats(grouped[method.nome] || [], monthKey) }))
+      .filter((entry) => entry.stats.totalSignals > 0)
+      .sort((a, b) => {
+        const aReliability = a.stats.reliability ?? -1;
+        const bReliability = b.stats.reliability ?? -1;
+        if (bReliability !== aReliability) return bReliability - aReliability;
+        if (b.stats.exactHits !== a.stats.exactHits) return b.stats.exactHits - a.stats.exactHits;
+        if (a.stats.averageHitColpo !== b.stats.averageHitColpo) {
+          const aColpo = a.stats.averageHitColpo ?? 999;
+          const bColpo = b.stats.averageHitColpo ?? 999;
+          return aColpo - bColpo;
+        }
+        return b.stats.totalSignals - a.stats.totalSignals;
+      });
+
+    if (!ranked.length) return null;
+
+    return {
+      monthKey,
+      monthLabel: formatMonthKey(monthKey),
+      nome: ranked[0].method.nome,
+      shortName: ranked[0].method.shortName,
+      path: ranked[0].method.path,
+      stats: ranked[0].stats
+    };
+  }
+
+  return {
+    updatedAt: estrazioni[0] || null,
+    currentMonthKey,
+    currentMonthLabel: formatMonthKey(currentMonthKey),
+    previousMonthKey,
+    previousMonthLabel: formatMonthKey(previousMonthKey),
+    bestCurrentMonth: pickBest(currentMonthKey),
+    bestPreviousMonth: pickBest(previousMonthKey),
+    methods
+  };
 }
 
 app.use(express.static(path.join(__dirname, "public")));
@@ -1358,6 +1776,16 @@ app.get("/api/giocate-metodi", async (req, res) => {
   } catch (error) {
     console.error("Errore /api/giocate-metodi:", error);
     res.status(500).json({ errore: "Impossibile leggere le giocate dei metodi", dettaglio: error.message });
+  }
+});
+
+app.get("/api/metodi-stats", async (req, res) => {
+  try {
+    const estrazioni = await getAllEstrazioni();
+    res.json(buildMethodStatsPayload(estrazioni));
+  } catch (error) {
+    console.error("Errore /api/metodi-stats:", error);
+    res.status(500).json({ errore: "Impossibile leggere le statistiche dei metodi", dettaglio: error.message });
   }
 });
 

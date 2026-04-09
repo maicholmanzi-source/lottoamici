@@ -5,6 +5,9 @@ const btnRicarica = document.getElementById("ricarica");
 const giocateMetodi = document.getElementById("giocateMetodi");
 const btnAggiornaMetodi = document.getElementById("aggiornaMetodi");
 const esitoUltimaEstrazione = document.getElementById("esitoUltimaEstrazione");
+const bestMethodsMonthly = document.getElementById("bestMethodsMonthly");
+const methodsStatsGrid = document.getElementById("methodsStatsGrid");
+const methodsStatsInfo = document.getElementById("methodsStatsInfo");
 
 function formatNumero(numero) {
   return String(numero).padStart(2, "0");
@@ -418,6 +421,7 @@ function renderMetodi(groups) {
           return `
           <div class="play-entry play-entry-grid">
             <div class="play-entry-main">
+              <div class="method-name-badge">${group.nome}</div>
               <p><strong>${item.titolo}</strong></p>
               <p class="muted">${item.sottotitolo || ""}</p>
               <p>${item.descrizione || ""}</p>
@@ -440,7 +444,13 @@ function renderMetodi(groups) {
 
       return `
         <div class="card method-summary-card">
-          <h3>${group.nome}</h3>
+          <div class="method-summary-header">
+            <div>
+              <p class="method-overline">Tipo di metodo</p>
+              <h3>${group.nome}</h3>
+            </div>
+            <span class="method-header-chip">Giocate attive</span>
+          </div>
           ${entries}
         </div>
       `;
@@ -477,6 +487,117 @@ async function caricaGiocateMetodi() {
   }
 }
 
+
+function formatPercent(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return "In osservazione";
+  return `${Number(value).toFixed(1)}%`;
+}
+
+function formatAvgColpo(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return "N/D";
+  return `${Number(value).toFixed(1)}° colpo medio`;
+}
+
+function formatRangeLabel(stats) {
+  if (!stats?.firstDate || !stats?.lastDate) return "Periodo non disponibile";
+  return `${stats.firstDate} → ${stats.lastDate}`;
+}
+
+function renderBestMethodCard(title, entry) {
+  if (!entry) {
+    return `
+      <div class="card featured-method-card muted-card">
+        <p class="method-overline">${title}</p>
+        <h3>Nessun metodo disponibile</h3>
+        <p class="muted">Non ci sono ancora segnali utili per questo periodo.</p>
+      </div>
+    `;
+  }
+
+  return `
+    <article class="card featured-method-card">
+      <p class="method-overline">${title}</p>
+      <h3>${entry.nome}</h3>
+      <p class="muted">${entry.monthLabel}</p>
+      <div class="featured-stats-grid">
+        <div class="mini-stat"><strong>Affidabilità</strong><span>${formatPercent(entry.stats?.reliability)}</span></div>
+        <div class="mini-stat"><strong>Prese</strong><span>${entry.stats?.exactHits || 0} / ${entry.stats?.completedSignals || 0}</span></div>
+        <div class="mini-stat"><strong>Colpo medio</strong><span>${formatAvgColpo(entry.stats?.averageHitColpo)}</span></div>
+      </div>
+      <a class="method-button" href="${entry.path}">Apri metodo</a>
+    </article>
+  `;
+}
+
+function renderMethodsStats(methods = []) {
+  if (!methodsStatsGrid) return;
+
+  if (!methods.length) {
+    methodsStatsGrid.innerHTML = `<div class="card">Nessuna statistica disponibile.</div>`;
+    return;
+  }
+
+  methodsStatsGrid.innerHTML = methods
+    .map((method) => `
+      <article class="method-card stats-card">
+        <div class="method-summary-header">
+          <div>
+            <p class="method-overline">${method.focus || "Metodo"}</p>
+            <h3>${method.nome}</h3>
+          </div>
+          <span class="method-header-chip">Storico</span>
+        </div>
+        <p>${method.descrizione || ""}</p>
+        <div class="stats-grid">
+          <div class="stat-box"><span>Affidabilità</span><strong>${formatPercent(method.stats?.reliability)}</strong></div>
+          <div class="stat-box"><span>Prese</span><strong>${method.stats?.exactHits || 0}</strong></div>
+          <div class="stat-box"><span>Esaminate</span><strong>${method.stats?.completedSignals || 0}</strong></div>
+          <div class="stat-box"><span>Colpo medio</span><strong>${formatAvgColpo(method.stats?.averageHitColpo)}</strong></div>
+        </div>
+        <div class="stats-detail-list">
+          <p><strong>Periodo di esaminazione:</strong> ${formatRangeLabel(method.stats)}</p>
+          <p><strong>Segnali totali:</strong> ${method.stats?.totalSignals || 0}</p>
+          <p><strong>In corso:</strong> ${method.stats?.ongoing || 0} · <strong>Parziali:</strong> ${method.stats?.partial || 0} · <strong>Scaduti/non presi:</strong> ${method.stats?.expired || 0}</p>
+        </div>
+        <a class="method-button" href="${method.path}">Apri ${method.shortName || method.nome}</a>
+      </article>
+    `)
+    .join("");
+}
+
+async function caricaStatisticheMetodi() {
+  if (!bestMethodsMonthly && !methodsStatsGrid) return;
+
+  try {
+    const data = await fetchJsonSafe("/api/metodi-stats");
+
+    if (bestMethodsMonthly) {
+      bestMethodsMonthly.innerHTML = [
+        renderBestMethodCard("Metodo migliore del mese corrente", data.bestCurrentMonth),
+        renderBestMethodCard("Metodo migliore del mese scorso", data.bestPreviousMonth)
+      ].join("");
+    }
+
+    if (methodsStatsGrid) {
+      renderMethodsStats(data.methods || []);
+      if (methodsStatsInfo) {
+        const updated = data.updatedAt ? `${data.updatedAt.dataTesto} (concorso ${data.updatedAt.concorso})` : "dato non disponibile";
+        methodsStatsInfo.textContent = `Statistiche calcolate sullo storico disponibile. Ultima estrazione usata: ${updated}.`;
+      }
+    }
+  } catch (error) {
+    if (bestMethodsMonthly) {
+      bestMethodsMonthly.innerHTML = `<div class="card"><strong>Errore:</strong> ${error.message}</div>`;
+    }
+    if (methodsStatsGrid) {
+      methodsStatsGrid.innerHTML = `<div class="card"><strong>Errore:</strong> ${error.message}</div>`;
+    }
+    if (methodsStatsInfo) {
+      methodsStatsInfo.textContent = "Errore nel caricamento delle statistiche dei metodi.";
+    }
+  }
+}
+
 if (btnRicarica) {
   btnRicarica.addEventListener("click", caricaEstrazioni);
 }
@@ -491,3 +612,4 @@ if (btnAggiornaMetodi) {
 
 caricaEstrazioni();
 caricaGiocateMetodi();
+caricaStatisticheMetodi();
