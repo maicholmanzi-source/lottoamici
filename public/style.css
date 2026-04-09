@@ -5,6 +5,26 @@ body {
   color: #222;
 }
 
+body.home-page {
+  background:
+    linear-gradient(rgba(248, 241, 229, 0.50), rgba(246, 236, 218, 0.64)),
+    url("/home-page-bg.png") center top / cover fixed no-repeat;
+}
+
+body.home-page main.container {
+  padding-top: 24px;
+  padding-bottom: 34px;
+}
+
+body.home-page .card,
+body.home-page .controls-card,
+body.home-page .featured-method-card,
+body.home-page .home-highlight-card {
+  background: rgba(255, 247, 236, 0.92);
+  backdrop-filter: blur(5px);
+  box-shadow: 0 14px 34px rgba(86, 43, 8, 0.16);
+}
+
 .hero {
   background: #0d3b66;
   color: white;
@@ -18,7 +38,7 @@ body {
   overflow: hidden;
   background:
     linear-gradient(rgba(13, 59, 102, 0.68), rgba(13, 59, 102, 0.62)),
-    url("/lotto-home-bg.png") center center / cover no-repeat;
+    url("/lotto-home-bg.jpg") center center / cover no-repeat;
   color: white;
 }
 
@@ -1254,4 +1274,9 @@ pre {
   .stats-grid {
     grid-template-columns: 1fr;
   }
+}
+
+body.home-page .section-title-row h2,
+body.home-page .section-title-row .muted {
+  text-shadow: 0 1px 0 rgba(255,255,255,0.22);
 }
