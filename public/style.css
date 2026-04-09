@@ -1022,18 +1022,33 @@ pre {
 }
 
 .stats-card--gold {
-  background: linear-gradient(180deg, #fff8d9 0%, #f2d373 100%);
-  border-color: #d4a72c;
+  background-image:
+    linear-gradient(180deg, rgba(255, 250, 220, 0.16) 0%, rgba(109, 73, 5, 0.16) 100%),
+    url("/podio-oro.jpg");
+  background-position: center;
+  background-size: cover;
+  border-color: #c79315;
+  box-shadow: 0 14px 34px rgba(166, 116, 8, 0.18);
 }
 
 .stats-card--silver {
-  background: linear-gradient(180deg, #f7f9fc 0%, #d6dde6 100%);
-  border-color: #aab4c2;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(62, 71, 80, 0.16) 100%),
+    url("/podio-argento.jpg");
+  background-position: center;
+  background-size: cover;
+  border-color: #98a1ac;
+  box-shadow: 0 14px 34px rgba(96, 107, 120, 0.16);
 }
 
 .stats-card--bronze {
-  background: linear-gradient(180deg, #f7e3d5 0%, #d59b72 100%);
-  border-color: #b56a3f;
+  background-image:
+    linear-gradient(180deg, rgba(255, 248, 241, 0.18) 0%, rgba(118, 58, 28, 0.14) 100%),
+    url("/podio-bronzo.jpg");
+  background-position: center;
+  background-size: cover;
+  border-color: #b06e49;
+  box-shadow: 0 14px 34px rgba(135, 77, 41, 0.16);
 }
 
 .stats-card--gold .method-header-chip {
@@ -1049,6 +1064,17 @@ pre {
 .stats-card--bronze .method-header-chip {
   background: #8b4b27;
   color: #fff7ed;
+}
+
+.stats-card--gold .stat-box,
+.stats-card--silver .stat-box,
+.stats-card--bronze .stat-box,
+.stats-card--gold .stats-detail-list,
+.stats-card--silver .stats-detail-list,
+.stats-card--bronze .stats-detail-list {
+  background: rgba(255, 255, 255, 0.84);
+  border-color: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(1px);
 }
 
 .method-header-chip {
