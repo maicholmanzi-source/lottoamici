@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ultime 10 estrazioni Lotto</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="hero">
+    <nav class="nav">
+      <a href="/" class="active">Home</a>
+      <a href="/metodi.html">Metodi</a>
+      <a href="/fai-3-fai-4.html">Fai 3 Fai 4</a>
+    </nav>
+
+    <h1>Ultime 10 estrazioni del Lotto</h1>
+    <p>Dati aggiornati in automatico</p>
+  </header>
+
+  <main class="container">
+    <section class="controls">
+      <label for="ruota">Filtra per ruota:</label>
+      <select id="ruota">
+        <option value="">Tutte le ruote</option>
+        <option value="Bari">Bari</option>
+        <option value="Cagliari">Cagliari</option>
+        <option value="Firenze">Firenze</option>
+        <option value="Genova">Genova</option>
+        <option value="Milano">Milano</option>
+        <option value="Napoli">Napoli</option>
+        <option value="Palermo">Palermo</option>
+        <option value="Roma">Roma</option>
+        <option value="Torino">Torino</option>
+        <option value="Venezia">Venezia</option>
+        <option value="Nazionale">Nazionale</option>
+      </select>
+
+      <button id="ricarica">Aggiorna</button>
+
+      <a href="/metodi.html">
+        <button type="button">Apri Metodi</button>
+      </a>
+
+      <a href="/fai-3-fai-4.html">
+        <button type="button">Apri Fai 3 Fai 4</button>
+      </a>
+    </section>
+
+    <section class="card">
+      <div class="home-box-header">
+        <div>
+          <h2>Giocate da fare secondo i metodi</h2>
+          <p class="muted">
+            Riepilogo automatico delle giocate attive trovate nei metodi del sito.
+          </p>
+        </div>
+        <button id="aggiornaMetodi" type="button">Aggiorna giocate</button>
+      </div>
+
+      <div id="giocateMetodi" class="cards">
+        <div class="card">Caricamento giocate...</div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Risultati</h2>
+      <div id="listaEstrazioni" class="cards"></div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

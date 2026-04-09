@@ -4,7 +4,12 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const app = express();
+<<<<<<< HEAD
 const PORT = 3000;
+=======
+const PORT = process.env.PORT || 3000;
+const HOST = "0.0.0.0";
+>>>>>>> d35d109 (fix deploy railway)
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -169,18 +174,23 @@ const MONTHS = {
 };
 
 function normalizeText(text) {
+<<<<<<< HEAD
   return text
     .replace(/\u00a0/g, " ")
     .replace(/\r/g, " ")
     .replace(/\n+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+=======
+  return text.replace(/\u00a0/g, " ").replace(/\r/g, " ").replace(/\n+/g, " ").replace(/\s+/g, " ").trim();
+>>>>>>> d35d109 (fix deploy railway)
 }
 
 function toISODate(dateLabel) {
   const match = dateLabel.match(
     /(?:Lunedì|Martedì|Mercoledì|Giovedì|Venerdì|Sabato|Domenica)\s+(\d{1,2})\s+([A-Za-zàèéìòù]+)\s+(\d{4})/i
   );
+<<<<<<< HEAD
 
   if (!match) return null;
 
@@ -188,6 +198,12 @@ function toISODate(dateLabel) {
   const month = MONTHS[monthName.toLowerCase()];
   if (!month) return null;
 
+=======
+  if (!match) return null;
+  const [, day, monthName, year] = match;
+  const month = MONTHS[monthName.toLowerCase()];
+  if (!month) return null;
+>>>>>>> d35d109 (fix deploy railway)
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
@@ -229,9 +245,13 @@ function parseBlock(block) {
     ruote[nomeRuota] = numeri;
   }
 
+<<<<<<< HEAD
   if (Object.keys(ruote).length !== 11) {
     return null;
   }
+=======
+  if (Object.keys(ruote).length !== 11) return null;
+>>>>>>> d35d109 (fix deploy railway)
 
   return {
     data: toISODate(dateLabel),
@@ -243,6 +263,7 @@ function parseBlock(block) {
 }
 
 async function downloadArchive(url) {
+<<<<<<< HEAD
   const response = await fetch(url, {
     headers: {
       "user-agent": "Mozilla/5.0"
@@ -252,6 +273,10 @@ async function downloadArchive(url) {
   if (!response.ok) {
     throw new Error(`Errore nel download archivio: ${response.status}`);
   }
+=======
+  const response = await fetch(url, { headers: { "user-agent": "Mozilla/5.0" } });
+  if (!response.ok) throw new Error(`Errore nel download archivio: ${response.status}`);
+>>>>>>> d35d109 (fix deploy railway)
 
   const html = await response.text();
   const $ = cheerio.load(html);
@@ -273,7 +298,10 @@ async function getAllEstrazioni() {
   );
 
   const mappa = new Map();
+<<<<<<< HEAD
 
+=======
+>>>>>>> d35d109 (fix deploy railway)
   raccolte.flat().forEach((estrazione) => {
     mappa.set(`${estrazione.data}-${estrazione.concorso}`, estrazione);
   });
@@ -292,6 +320,16 @@ function fuori90(numero) {
   return numero;
 }
 
+<<<<<<< HEAD
+=======
+function normalizeLottoNumber(numero) {
+  let valore = Number(numero);
+  while (valore < 1) valore += 90;
+  while (valore > 90) valore -= 90;
+  return valore === 0 ? 90 : valore;
+}
+
+>>>>>>> d35d109 (fix deploy railway)
 function ambataDiDecina(numero) {
   if (numero >= 1 && numero <= 9) return 90;
   return Math.floor(numero / 10) * 10;
@@ -304,18 +342,23 @@ function countDrawsAfter(estrazioni, dataISO) {
 function parseDotNumbers(value) {
   return [
     ...new Set(
+<<<<<<< HEAD
       value
         .split(".")
         .map((n) => n.trim())
         .filter(Boolean)
         .map((n) => Number(n))
         .filter((n) => !Number.isNaN(n))
+=======
+      value.split(".").map((n) => n.trim()).filter(Boolean).map((n) => Number(n)).filter((n) => !Number.isNaN(n))
+>>>>>>> d35d109 (fix deploy railway)
     )
   ];
 }
 
 function parseMoncoTable(raw) {
   const map = {};
+<<<<<<< HEAD
 
   raw
     .trim()
@@ -338,11 +381,24 @@ function parseMoncoTable(raw) {
       };
     });
 
+=======
+  raw.trim().split("\n").map((line) => line.trim()).filter(Boolean).forEach((line) => {
+    const match = line.match(/^(\d+)\s+([0-9.]+)\s+([0-9.]+)$/);
+    if (!match) return;
+
+    const isotopo = Number(match[1]);
+    const ambate = parseDotNumbers(match[2]);
+    const abbinamenti = parseDotNumbers(match[3]);
+
+    map[isotopo] = { isotopo, ambate, abbinamenti };
+  });
+>>>>>>> d35d109 (fix deploy railway)
   return map;
 }
 
 function findIsotopi(cinquina1, cinquina2) {
   const isotopi = [];
+<<<<<<< HEAD
 
   for (let i = 0; i < 5; i++) {
     if (cinquina1[i] === cinquina2[i]) {
@@ -353,6 +409,13 @@ function findIsotopi(cinquina1, cinquina2) {
     }
   }
 
+=======
+  for (let i = 0; i < 5; i++) {
+    if (cinquina1[i] === cinquina2[i]) {
+      isotopi.push({ posizione: i + 1, numero: cinquina1[i] });
+    }
+  }
+>>>>>>> d35d109 (fix deploy railway)
   return isotopi;
 }
 
@@ -362,6 +425,7 @@ function isNumeroGemello(numero) {
 
 function findGemelliIsotopi(cinquina1, cinquina2) {
   const risultati = [];
+<<<<<<< HEAD
 
   for (let i = 0; i < 5; i++) {
     const n1 = cinquina1[i];
@@ -376,6 +440,15 @@ function findGemelliIsotopi(cinquina1, cinquina2) {
     }
   }
 
+=======
+  for (let i = 0; i < 5; i++) {
+    const n1 = cinquina1[i];
+    const n2 = cinquina2[i];
+    if (isNumeroGemello(n1) && isNumeroGemello(n2)) {
+      risultati.push({ posizione: i + 1, gemello1: n1, gemello2: n2 });
+    }
+  }
+>>>>>>> d35d109 (fix deploy railway)
   return risultati;
 }
 
@@ -385,6 +458,7 @@ function calcolaAmbateGemelli(gemello1, gemello2) {
 
   let diff = gemello1 - gemello2;
   let ambata2;
+<<<<<<< HEAD
 
   if (diff === 0) {
     ambata2 = 90;
@@ -398,6 +472,13 @@ function calcolaAmbateGemelli(gemello1, gemello2) {
     ambata1,
     ambata2
   };
+=======
+  if (diff === 0) ambata2 = 90;
+  else if (diff < 0) ambata2 = fuori90(90 + diff);
+  else ambata2 = diff;
+
+  return { ambata1, ambata2 };
+>>>>>>> d35d109 (fix deploy railway)
 }
 
 const MONCO_TABLE = parseMoncoTable(RAW_MONCO_TABLE);
@@ -405,10 +486,15 @@ const MONCO_TABLE = parseMoncoTable(RAW_MONCO_TABLE);
 function getFigura(numero) {
   return ((numero - 1) % 9) + 1;
 }
+<<<<<<< HEAD
+=======
+
+>>>>>>> d35d109 (fix deploy railway)
 function getVertibile(numero) {
   const testo = String(numero).padStart(2, "0");
   return Number(testo.split("").reverse().join(""));
 }
+<<<<<<< HEAD
 function normalizeLottoNumber(numero) {
   let valore = Number(numero);
 
@@ -423,6 +509,13 @@ function shiftLotto(numero, delta) {
   while (valore < 1) valore += 90;
   while (valore > 90) valore -= 90;
 
+=======
+
+function shiftLotto(numero, delta) {
+  let valore = numero + delta;
+  while (valore < 1) valore += 90;
+  while (valore > 90) valore -= 90;
+>>>>>>> d35d109 (fix deploy railway)
   return valore;
 }
 
@@ -433,12 +526,18 @@ function uniqueNumbers(numeri) {
 function getMostRecentCompletedMonthKey(estrazioni) {
   const now = new Date();
   const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+<<<<<<< HEAD
 
+=======
+>>>>>>> d35d109 (fix deploy railway)
   const monthKeys = [...new Set(estrazioni.map((e) => e.data.slice(0, 7)))]
     .filter((key) => key !== currentMonthKey)
     .sort()
     .reverse();
+<<<<<<< HEAD
 
+=======
+>>>>>>> d35d109 (fix deploy railway)
   return monthKeys[0] || null;
 }
 
@@ -448,6 +547,7 @@ function getLastExtractionOfMonth(estrazioni, monthKey) {
 
 function getPrevisioniAzzerati(estrazioni) {
   const monthKey = getMostRecentCompletedMonthKey(estrazioni);
+<<<<<<< HEAD
 
   if (!monthKey) {
     return {
@@ -469,19 +569,35 @@ function getPrevisioniAzzerati(estrazioni) {
       colpiRimasti: 0,
       previsioni: []
     };
+=======
+  if (!monthKey) {
+    return { metodo: "Metodo Azzerati", estrazioneRilevamento: null, colpiPassati: 0, colpiRimasti: 0, previsioni: [] };
+  }
+
+  const estrazione = getLastExtractionOfMonth(estrazioni, monthKey);
+  if (!estrazione) {
+    return { metodo: "Metodo Azzerati", estrazioneRilevamento: null, colpiPassati: 0, colpiRimasti: 0, previsioni: [] };
+>>>>>>> d35d109 (fix deploy railway)
   }
 
   const colpiPassati = countDrawsAfter(estrazioni, estrazione.data);
   const colpiRimasti = Math.max(0, 10 - colpiPassati);
+<<<<<<< HEAD
 
+=======
+>>>>>>> d35d109 (fix deploy railway)
   const previsioni = [];
 
   for (const ruota of RUOTE) {
     const cinquina = estrazione.ruote[ruota];
+<<<<<<< HEAD
     const zerati = cinquina
       .map((numero, index) => ({ numero, index }))
       .filter((item) => item.numero % 10 === 0);
 
+=======
+    const zerati = cinquina.map((numero, index) => ({ numero, index })).filter((item) => item.numero % 10 === 0);
+>>>>>>> d35d109 (fix deploy railway)
     if (zerati.length !== 1) continue;
 
     const zerato = zerati[0];
@@ -527,6 +643,7 @@ function getPrevisioniAzzerati(estrazioni) {
 
 function getPrevisioniMonco(estrazioni) {
   const risultati = [];
+<<<<<<< HEAD
 
   for (const [ruota1, ruota2] of COPPIE_MONCO) {
     let segnale = null;
@@ -554,6 +671,24 @@ function getPrevisioniMonco(estrazioni) {
 
     const colpiPassati = countDrawsAfter(estrazioni, segnale.estrazione.data);
 
+=======
+  for (const [ruota1, ruota2] of COPPIE_MONCO) {
+    let segnale = null;
+    for (const estrazione of estrazioni) {
+      const cinquina1 = estrazione?.ruote?.[ruota1];
+      const cinquina2 = estrazione?.ruote?.[ruota2];
+      if (!Array.isArray(cinquina1) || !Array.isArray(cinquina2)) continue;
+
+      const isotopi = findIsotopi(cinquina1, cinquina2);
+      if (isotopi.length > 0) {
+        segnale = { estrazione, isotopi, cinquina1, cinquina2 };
+        break;
+      }
+    }
+    if (!segnale) continue;
+
+    const colpiPassati = countDrawsAfter(estrazioni, segnale.estrazione.data);
+>>>>>>> d35d109 (fix deploy railway)
     risultati.push({
       coppia: `${ruota1} - ${ruota2}`,
       ruota1,
@@ -565,12 +700,16 @@ function getPrevisioniMonco(estrazioni) {
       cinquina2: segnale.cinquina2,
       colpiPassati,
       previsioni: segnale.isotopi.map((item) => {
+<<<<<<< HEAD
         const tabella = MONCO_TABLE[item.numero] || {
           isotopo: item.numero,
           ambate: [],
           abbinamenti: []
         };
 
+=======
+        const tabella = MONCO_TABLE[item.numero] || { isotopo: item.numero, ambate: [], abbinamenti: [] };
+>>>>>>> d35d109 (fix deploy railway)
         return {
           posizione: item.posizione,
           isotopo: item.numero,
@@ -580,7 +719,10 @@ function getPrevisioniMonco(estrazioni) {
       })
     });
   }
+<<<<<<< HEAD
 
+=======
+>>>>>>> d35d109 (fix deploy railway)
   return {
     metodo: "Metodo del Monco di San Ferdinando",
     descrizione:
@@ -591,6 +733,7 @@ function getPrevisioniMonco(estrazioni) {
 
 function getPrevisioni990(estrazioni) {
   const estrazione = estrazioni[0] || null;
+<<<<<<< HEAD
 
   if (!estrazione) {
     return {
@@ -603,6 +746,12 @@ function getPrevisioni990(estrazioni) {
 
   const colpiPassati = 0;
 
+=======
+  if (!estrazione) {
+    return { metodo: "Metodo 9 e 90", estrazioneRilevamento: null, colpiPassati: 0, previsioni: [] };
+  }
+
+>>>>>>> d35d109 (fix deploy railway)
   const previsioni = RUOTE.map((ruota) => {
     const cinquina = estrazione.ruote[ruota];
     const primo = cinquina[0];
@@ -613,10 +762,14 @@ function getPrevisioni990(estrazioni) {
 
     const figuraSecondo = getFigura(secondo);
     const figuraQuarto = getFigura(quarto);
+<<<<<<< HEAD
 
     if (figuraSecondo !== 9) {
       return null;
     }
+=======
+    if (figuraSecondo !== 9) return null;
+>>>>>>> d35d109 (fix deploy railway)
 
     const abbinamenti = uniqueNumbers([
       shiftLotto(primo, -1),
@@ -639,7 +792,11 @@ function getPrevisioni990(estrazioni) {
       figuraQuarto,
       ambate: [9, 90],
       abbinamenti,
+<<<<<<< HEAD
       colpiPassati
+=======
+      colpiPassati: 0
+>>>>>>> d35d109 (fix deploy railway)
     };
   }).filter(Boolean);
 
@@ -652,7 +809,11 @@ function getPrevisioni990(estrazioni) {
       dataTesto: estrazione.dataTesto,
       concorso: estrazione.concorso
     },
+<<<<<<< HEAD
     colpiPassati,
+=======
+    colpiPassati: 0,
+>>>>>>> d35d109 (fix deploy railway)
     previsioni
   };
 }
@@ -668,6 +829,7 @@ function getPrevisioniIsotopi(estrazioni) {
   }
 
   const risultati = [];
+<<<<<<< HEAD
 
   for (const [ruota1, ruota2] of COPPIE_MONCO) {
     let segnale = null;
@@ -676,10 +838,18 @@ function getPrevisioniIsotopi(estrazioni) {
       const cinquina1 = estrazione?.ruote?.[ruota1];
       const cinquina2 = estrazione?.ruote?.[ruota2];
 
+=======
+  for (const [ruota1, ruota2] of COPPIE_MONCO) {
+    let segnale = null;
+    for (const estrazione of estrazioni) {
+      const cinquina1 = estrazione?.ruote?.[ruota1];
+      const cinquina2 = estrazione?.ruote?.[ruota2];
+>>>>>>> d35d109 (fix deploy railway)
       if (!Array.isArray(cinquina1) || !Array.isArray(cinquina2)) continue;
       if (cinquina1.length !== 5 || cinquina2.length !== 5) continue;
 
       const isotopi = findIsotopi(cinquina1, cinquina2);
+<<<<<<< HEAD
 
       if (isotopi.length > 0) {
         segnale = {
@@ -692,6 +862,13 @@ function getPrevisioniIsotopi(estrazioni) {
       }
     }
 
+=======
+      if (isotopi.length > 0) {
+        segnale = { estrazione, isotopi, cinquina1, cinquina2 };
+        break;
+      }
+    }
+>>>>>>> d35d109 (fix deploy railway)
     if (!segnale) continue;
 
     const colpiPassati = countDrawsAfter(estrazioni, segnale.estrazione.data);
@@ -719,7 +896,10 @@ function getPrevisioniIsotopi(estrazioni) {
   }
 
   risultati.sort((a, b) => b.dataSegnale.localeCompare(a.dataSegnale));
+<<<<<<< HEAD
 
+=======
+>>>>>>> d35d109 (fix deploy railway)
   return {
     metodo: "Metodo degli Isotopi",
     descrizione:
@@ -739,6 +919,7 @@ function getPrevisioniGemelli(estrazioni) {
   }
 
   const risultati = [];
+<<<<<<< HEAD
 
   for (const [ruota1, ruota2] of COPPIE_GEMELLI) {
     let segnale = null;
@@ -747,10 +928,18 @@ function getPrevisioniGemelli(estrazioni) {
       const cinquina1 = estrazione?.ruote?.[ruota1];
       const cinquina2 = estrazione?.ruote?.[ruota2];
 
+=======
+  for (const [ruota1, ruota2] of COPPIE_GEMELLI) {
+    let segnale = null;
+    for (const estrazione of estrazioni) {
+      const cinquina1 = estrazione?.ruote?.[ruota1];
+      const cinquina2 = estrazione?.ruote?.[ruota2];
+>>>>>>> d35d109 (fix deploy railway)
       if (!Array.isArray(cinquina1) || !Array.isArray(cinquina2)) continue;
       if (cinquina1.length !== 5 || cinquina2.length !== 5) continue;
 
       const gemelli = findGemelliIsotopi(cinquina1, cinquina2);
+<<<<<<< HEAD
 
       if (gemelli.length > 0) {
         segnale = {
@@ -767,6 +956,16 @@ function getPrevisioniGemelli(estrazioni) {
 
     const colpiPassati = countDrawsAfter(estrazioni, segnale.estrazione.data);
 
+=======
+      if (gemelli.length > 0) {
+        segnale = { estrazione, gemelli, cinquina1, cinquina2 };
+        break;
+      }
+    }
+    if (!segnale) continue;
+
+    const colpiPassati = countDrawsAfter(estrazioni, segnale.estrazione.data);
+>>>>>>> d35d109 (fix deploy railway)
     risultati.push({
       coppia: `${ruota1} - ${ruota2}`,
       ruota1,
@@ -779,7 +978,10 @@ function getPrevisioniGemelli(estrazioni) {
       colpiPassati,
       previsioni: segnale.gemelli.map((item) => {
         const calcolo = calcolaAmbateGemelli(item.gemello1, item.gemello2);
+<<<<<<< HEAD
 
+=======
+>>>>>>> d35d109 (fix deploy railway)
         return {
           posizione: item.posizione,
           gemello1: item.gemello1,
@@ -792,7 +994,10 @@ function getPrevisioniGemelli(estrazioni) {
   }
 
   risultati.sort((a, b) => b.dataSegnale.localeCompare(a.dataSegnale));
+<<<<<<< HEAD
 
+=======
+>>>>>>> d35d109 (fix deploy railway)
   return {
     metodo: "Metodo dei Gemelli",
     descrizione:
@@ -800,6 +1005,137 @@ function getPrevisioniGemelli(estrazioni) {
     risultati
   };
 }
+<<<<<<< HEAD
+=======
+
+function getPrevisioniDonPedro(estrazioni) {
+  if (!Array.isArray(estrazioni) || estrazioni.length === 0) {
+    return {
+      metodo: "Metodo Don Pedro",
+      descrizione:
+        "Versione automatizzata: isotopia perfetta su ruote consecutive, capogioco dalla somma dei due isotopi con fuori 90, abbinamenti fissi 15-30-45.",
+      risultati: []
+    };
+  }
+
+  const risultati = [];
+  for (const [ruota1, ruota2] of COPPIE_MONCO) {
+    let segnale = null;
+    for (const estrazione of estrazioni) {
+      const cinquina1 = estrazione?.ruote?.[ruota1];
+      const cinquina2 = estrazione?.ruote?.[ruota2];
+      if (!Array.isArray(cinquina1) || !Array.isArray(cinquina2)) continue;
+      if (cinquina1.length !== 5 || cinquina2.length !== 5) continue;
+
+      const isotopi = findIsotopi(cinquina1, cinquina2);
+      if (isotopi.length > 0) {
+        segnale = { estrazione, isotopi, cinquina1, cinquina2 };
+        break;
+      }
+    }
+    if (!segnale) continue;
+
+    const colpiPassati = countDrawsAfter(estrazioni, segnale.estrazione.data);
+    risultati.push({
+      coppia: `${ruota1} - ${ruota2}`,
+      ruota1,
+      ruota2,
+      dataSegnale: segnale.estrazione.data,
+      dataSegnaleTesto: segnale.estrazione.dataTesto,
+      concorso: segnale.estrazione.concorso,
+      cinquina1: segnale.cinquina1,
+      cinquina2: segnale.cinquina2,
+      colpiPassati,
+      previsioni: segnale.isotopi.map((item) => {
+        const capogioco = fuori90(item.numero + item.numero);
+        const abbinamenti = [15, 30, 45];
+        const ambi = abbinamenti.map((abbinamento) => [capogioco, abbinamento]);
+        return {
+          isotopo: item.numero,
+          posizione: item.posizione,
+          capogioco,
+          abbinamenti,
+          ambi
+        };
+      })
+    });
+  }
+
+  risultati.sort((a, b) => b.dataSegnale.localeCompare(a.dataSegnale));
+  return {
+    metodo: "Metodo Don Pedro",
+    descrizione:
+      "Versione automatizzata: isotopia perfetta su ruote consecutive, capogioco dalla somma dei due isotopi con fuori 90, abbinamenti fissi 15-30-45.",
+    risultati
+  };
+}
+
+function getPrevisioniNinja(estrazioni) {
+  if (!Array.isArray(estrazioni) || estrazioni.length === 0) {
+    return {
+      metodo: "Metodo Ninja",
+      descrizione:
+        "Versione automatizzata: struttura isotopa, Gap Centrale come media tra isotopo e vertibile, chiusura armonica come vertibile del Gap Centrale.",
+      risultati: []
+    };
+  }
+
+  const risultati = [];
+  for (const [ruota1, ruota2] of COPPIE_MONCO) {
+    let segnale = null;
+    for (const estrazione of estrazioni) {
+      const cinquina1 = estrazione?.ruote?.[ruota1];
+      const cinquina2 = estrazione?.ruote?.[ruota2];
+      if (!Array.isArray(cinquina1) || !Array.isArray(cinquina2)) continue;
+      if (cinquina1.length !== 5 || cinquina2.length !== 5) continue;
+
+      const isotopi = findIsotopi(cinquina1, cinquina2);
+      if (isotopi.length > 0) {
+        segnale = { estrazione, isotopi, cinquina1, cinquina2 };
+        break;
+      }
+    }
+    if (!segnale) continue;
+
+    const colpiPassati = countDrawsAfter(estrazioni, segnale.estrazione.data);
+    risultati.push({
+      coppia: `${ruota1} - ${ruota2}`,
+      ruota1,
+      ruota2,
+      dataSegnale: segnale.estrazione.data,
+      dataSegnaleTesto: segnale.estrazione.dataTesto,
+      concorso: segnale.estrazione.concorso,
+      cinquina1: segnale.cinquina1,
+      cinquina2: segnale.cinquina2,
+      colpiPassati,
+      previsioni: segnale.isotopi.map((item) => {
+        const isotopo = item.numero;
+        const vertibile = getVertibile(isotopo);
+        const gapCentrale = Math.round((isotopo + vertibile) / 2);
+        const chiusuraArmonica = getVertibile(gapCentrale);
+
+        return {
+          isotopo,
+          posizione: item.posizione,
+          vertibile,
+          gapCentrale,
+          chiusuraArmonica,
+          ambate: [gapCentrale, chiusuraArmonica]
+        };
+      })
+    });
+  }
+
+  risultati.sort((a, b) => b.dataSegnale.localeCompare(a.dataSegnale));
+  return {
+    metodo: "Metodo Ninja",
+    descrizione:
+      "Versione automatizzata: struttura isotopa, Gap Centrale come media tra isotopo e vertibile, chiusura armonica come vertibile del Gap Centrale.",
+    risultati
+  };
+}
+
+>>>>>>> d35d109 (fix deploy railway)
 function getPrevisioniDoppio30(estrazioni) {
   if (!Array.isArray(estrazioni) || estrazioni.length === 0) {
     return {
@@ -811,6 +1147,7 @@ function getPrevisioniDoppio30(estrazioni) {
   }
 
   const risultati = [];
+<<<<<<< HEAD
 
   for (const [ruota1, ruota2] of COPPIE_MONCO) {
     let segnale = null;
@@ -819,16 +1156,27 @@ function getPrevisioniDoppio30(estrazioni) {
       const cinquina1 = estrazione?.ruote?.[ruota1];
       const cinquina2 = estrazione?.ruote?.[ruota2];
 
+=======
+  for (const [ruota1, ruota2] of COPPIE_MONCO) {
+    let segnale = null;
+    for (const estrazione of estrazioni) {
+      const cinquina1 = estrazione?.ruote?.[ruota1];
+      const cinquina2 = estrazione?.ruote?.[ruota2];
+>>>>>>> d35d109 (fix deploy railway)
       if (!Array.isArray(cinquina1) || !Array.isArray(cinquina2)) continue;
       if (cinquina1.length !== 5 || cinquina2.length !== 5) continue;
 
       const casi = [];
+<<<<<<< HEAD
 
+=======
+>>>>>>> d35d109 (fix deploy railway)
       for (let i = 0; i < 5; i++) {
         const n1 = cinquina1[i];
         const n2 = cinquina2[i];
 
         if (n1 === 30 && n2 !== 30) {
+<<<<<<< HEAD
           casi.push({
             posizione: i + 1,
             ruota30: ruota1,
@@ -844,10 +1192,16 @@ function getPrevisioniDoppio30(estrazioni) {
             numero30: n2,
             numeroBase: n1
           });
+=======
+          casi.push({ posizione: i + 1, ruota30: ruota1, ruotaBase: ruota2, numero30: n1, numeroBase: n2 });
+        } else if (n2 === 30 && n1 !== 30) {
+          casi.push({ posizione: i + 1, ruota30: ruota2, ruotaBase: ruota1, numero30: n2, numeroBase: n1 });
+>>>>>>> d35d109 (fix deploy railway)
         }
       }
 
       if (casi.length > 0) {
+<<<<<<< HEAD
         segnale = {
           estrazione,
           casi,
@@ -862,6 +1216,15 @@ function getPrevisioniDoppio30(estrazioni) {
 
     const colpiPassati = countDrawsAfter(estrazioni, segnale.estrazione.data);
 
+=======
+        segnale = { estrazione, casi, cinquina1, cinquina2 };
+        break;
+      }
+    }
+    if (!segnale) continue;
+
+    const colpiPassati = countDrawsAfter(estrazioni, segnale.estrazione.data);
+>>>>>>> d35d109 (fix deploy railway)
     risultati.push({
       coppia: `${ruota1} - ${ruota2}`,
       ruota1,
@@ -908,7 +1271,10 @@ function getPrevisioniDoppio30(estrazioni) {
   }
 
   risultati.sort((a, b) => b.dataSegnale.localeCompare(a.dataSegnale));
+<<<<<<< HEAD
 
+=======
+>>>>>>> d35d109 (fix deploy railway)
   return {
     metodo: "Metodo Doppio 30",
     descrizione:
@@ -916,6 +1282,7 @@ function getPrevisioniDoppio30(estrazioni) {
     risultati
   };
 }
+<<<<<<< HEAD
 function getPrevisioniDonPedro(estrazioni) {
   if (!Array.isArray(estrazioni) || estrazioni.length === 0) {
     return {
@@ -993,6 +1360,11 @@ function getPrevisioniDonPedro(estrazioni) {
 function getPrevisioniVenere(estrazioni) {
   const estrazione = estrazioni[0] || null;
 
+=======
+
+function getPrevisioniVenere(estrazioni) {
+  const estrazione = estrazioni[0] || null;
+>>>>>>> d35d109 (fix deploy railway)
   if (!estrazione) {
     return {
       metodo: "Metodo Venere",
@@ -1005,7 +1377,10 @@ function getPrevisioniVenere(estrazioni) {
 
   const venezia = estrazione?.ruote?.["Venezia"];
   const roma = estrazione?.ruote?.["Roma"];
+<<<<<<< HEAD
 
+=======
+>>>>>>> d35d109 (fix deploy railway)
   if (!Array.isArray(venezia) || !Array.isArray(roma) || venezia.length !== 5 || roma.length !== 5) {
     return {
       metodo: "Metodo Venere",
@@ -1021,13 +1396,19 @@ function getPrevisioniVenere(estrazioni) {
   }
 
   const previsioni = [];
+<<<<<<< HEAD
 
+=======
+>>>>>>> d35d109 (fix deploy railway)
   for (let i = 0; i < 5; i++) {
     const numeroVenezia = venezia[i];
     const numeroRoma = roma[i];
 
     const capogioco1 = fuori90(numeroVenezia + numeroRoma);
+<<<<<<< HEAD
 
+=======
+>>>>>>> d35d109 (fix deploy railway)
     let differenza = Math.abs(numeroVenezia - numeroRoma);
     if (differenza === 0) differenza = 90;
 
@@ -1063,6 +1444,7 @@ function getPrevisioniVenere(estrazioni) {
     previsioni
   };
 }
+<<<<<<< HEAD
 function getPrevisioniNinja(estrazioni) {
   if (!Array.isArray(estrazioni) || estrazioni.length === 0) {
     return {
@@ -1139,11 +1521,15 @@ function getPrevisioniNinja(estrazioni) {
     risultati
   };
 }
+=======
+
+>>>>>>> d35d109 (fix deploy railway)
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/api/estrazioni", async (req, res) => {
   try {
     const estrazioni = await getUltimeEstrazioni(10);
+<<<<<<< HEAD
 
     res.json({
       fonti: ARCHIVE_URLS,
@@ -1156,6 +1542,12 @@ app.get("/api/estrazioni", async (req, res) => {
       errore: "Impossibile leggere le estrazioni",
       dettaglio: error.message
     });
+=======
+    res.json({ fonti: ARCHIVE_URLS, totale: estrazioni.length, estrazioni });
+  } catch (error) {
+    console.error("Errore /api/estrazioni:", error);
+    res.status(500).json({ errore: "Impossibile leggere le estrazioni", dettaglio: error.message });
+>>>>>>> d35d109 (fix deploy railway)
   }
 });
 
@@ -1164,12 +1556,18 @@ app.get("/api/ruota/:nome", async (req, res) => {
     const nomeRichiesto = req.params.nome.toLowerCase();
     const ruota = RUOTE.find((r) => r.toLowerCase() === nomeRichiesto);
 
+<<<<<<< HEAD
     if (!ruota) {
       return res.status(404).json({ errore: "Ruota non valida" });
     }
 
     const estrazioni = await getUltimeEstrazioni(10);
 
+=======
+    if (!ruota) return res.status(404).json({ errore: "Ruota non valida" });
+
+    const estrazioni = await getUltimeEstrazioni(10);
+>>>>>>> d35d109 (fix deploy railway)
     const risultato = estrazioni.map((e) => ({
       data: e.data,
       dataTesto: e.dataTesto,
@@ -1181,16 +1579,21 @@ app.get("/api/ruota/:nome", async (req, res) => {
     res.json(risultato);
   } catch (error) {
     console.error("Errore /api/ruota:", error);
+<<<<<<< HEAD
     res.status(500).json({
       errore: "Impossibile leggere la ruota richiesta",
       dettaglio: error.message
     });
+=======
+    res.status(500).json({ errore: "Impossibile leggere la ruota richiesta", dettaglio: error.message });
+>>>>>>> d35d109 (fix deploy railway)
   }
 });
 
 app.get("/api/metodo-azzerati", async (req, res) => {
   try {
     const estrazioni = await getAllEstrazioni();
+<<<<<<< HEAD
     const risultato = getPrevisioniAzzerati(estrazioni);
     res.json(risultato);
   } catch (error) {
@@ -1199,12 +1602,19 @@ app.get("/api/metodo-azzerati", async (req, res) => {
       errore: "Impossibile calcolare il metodo azzerati",
       dettaglio: error.message
     });
+=======
+    res.json(getPrevisioniAzzerati(estrazioni));
+  } catch (error) {
+    console.error("Errore metodo azzerati:", error);
+    res.status(500).json({ errore: "Impossibile calcolare il metodo azzerati", dettaglio: error.message });
+>>>>>>> d35d109 (fix deploy railway)
   }
 });
 
 app.get("/api/metodo-monco", async (req, res) => {
   try {
     const estrazioni = await getAllEstrazioni();
+<<<<<<< HEAD
     const risultato = getPrevisioniMonco(estrazioni);
     res.json(risultato);
   } catch (error) {
@@ -1213,12 +1623,19 @@ app.get("/api/metodo-monco", async (req, res) => {
       errore: "Impossibile calcolare il metodo del monco",
       dettaglio: error.message
     });
+=======
+    res.json(getPrevisioniMonco(estrazioni));
+  } catch (error) {
+    console.error("Errore metodo monco:", error);
+    res.status(500).json({ errore: "Impossibile calcolare il metodo del monco", dettaglio: error.message });
+>>>>>>> d35d109 (fix deploy railway)
   }
 });
 
 app.get("/api/metodo-9-90", async (req, res) => {
   try {
     const estrazioni = await getAllEstrazioni();
+<<<<<<< HEAD
     const risultato = getPrevisioni990(estrazioni);
     res.json(risultato);
   } catch (error) {
@@ -1227,12 +1644,19 @@ app.get("/api/metodo-9-90", async (req, res) => {
       errore: "Impossibile calcolare il metodo 9 e 90",
       dettaglio: error.message
     });
+=======
+    res.json(getPrevisioni990(estrazioni));
+  } catch (error) {
+    console.error("Errore metodo 9 e 90:", error);
+    res.status(500).json({ errore: "Impossibile calcolare il metodo 9 e 90", dettaglio: error.message });
+>>>>>>> d35d109 (fix deploy railway)
   }
 });
 
 app.get("/api/metodo-isotopi", async (req, res) => {
   try {
     const estrazioni = await getAllEstrazioni();
+<<<<<<< HEAD
     const risultato = getPrevisioniIsotopi(estrazioni);
     res.json(risultato);
   } catch (error) {
@@ -1241,12 +1665,19 @@ app.get("/api/metodo-isotopi", async (req, res) => {
       errore: "Impossibile calcolare il metodo degli isotopi",
       dettaglio: error.message
     });
+=======
+    res.json(getPrevisioniIsotopi(estrazioni));
+  } catch (error) {
+    console.error("Errore metodo isotopi:", error);
+    res.status(500).json({ errore: "Impossibile calcolare il metodo degli isotopi", dettaglio: error.message });
+>>>>>>> d35d109 (fix deploy railway)
   }
 });
 
 app.get("/api/metodo-gemelli", async (req, res) => {
   try {
     const estrazioni = await getAllEstrazioni();
+<<<<<<< HEAD
     const risultato = getPrevisioniGemelli(estrazioni);
     res.json(risultato);
   } catch (error) {
@@ -1255,12 +1686,19 @@ app.get("/api/metodo-gemelli", async (req, res) => {
       errore: "Impossibile calcolare il metodo dei gemelli",
       dettaglio: error.message
     });
+=======
+    res.json(getPrevisioniGemelli(estrazioni));
+  } catch (error) {
+    console.error("Errore metodo gemelli:", error);
+    res.status(500).json({ errore: "Impossibile calcolare il metodo dei gemelli", dettaglio: error.message });
+>>>>>>> d35d109 (fix deploy railway)
   }
 });
 
 app.get("/api/metodo-don-pedro", async (req, res) => {
   try {
     const estrazioni = await getAllEstrazioni();
+<<<<<<< HEAD
     const risultato = getPrevisioniDonPedro(estrazioni);
     res.json(risultato);
   } catch (error) {
@@ -1313,3 +1751,45 @@ app.get("/api/metodo-venere", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server avviato su http://localhost:${PORT}`);
 });
+=======
+    res.json(getPrevisioniDonPedro(estrazioni));
+  } catch (error) {
+    console.error("Errore metodo don pedro:", error);
+    res.status(500).json({ errore: "Impossibile calcolare il metodo Don Pedro", dettaglio: error.message });
+  }
+});
+
+app.get("/api/metodo-ninja", async (req, res) => {
+  try {
+    const estrazioni = await getAllEstrazioni();
+    res.json(getPrevisioniNinja(estrazioni));
+  } catch (error) {
+    console.error("Errore metodo ninja:", error);
+    res.status(500).json({ errore: "Impossibile calcolare il metodo Ninja", dettaglio: error.message });
+  }
+});
+
+app.get("/api/metodo-doppio-30", async (req, res) => {
+  try {
+    const estrazioni = await getAllEstrazioni();
+    res.json(getPrevisioniDoppio30(estrazioni));
+  } catch (error) {
+    console.error("Errore metodo doppio 30:", error);
+    res.status(500).json({ errore: "Impossibile calcolare il metodo Doppio 30", dettaglio: error.message });
+  }
+});
+
+app.get("/api/metodo-venere", async (req, res) => {
+  try {
+    const estrazioni = await getAllEstrazioni();
+    res.json(getPrevisioniVenere(estrazioni));
+  } catch (error) {
+    console.error("Errore metodo venere:", error);
+    res.status(500).json({ errore: "Impossibile calcolare il metodo Venere", dettaglio: error.message });
+  }
+});
+
+app.listen(PORT, HOST, () => {
+  console.log(`Server avviato su http://${HOST}:${PORT}`);
+});
+>>>>>>> d35d109 (fix deploy railway)

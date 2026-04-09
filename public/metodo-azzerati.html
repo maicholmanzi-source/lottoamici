@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Metodo Azzerati</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="hero">
+    <nav class="nav">
+      <a href="/">Home</a>
+<a href="/metodi.html">Metodi</a>
+
+    </nav>
+
+    <h1>Metodo Azzerati</h1>
+    <p>Previsioni automatiche calcolate sulle estrazioni del Lotto</p>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Regola applicata</h2>
+      <p>
+        La pagina cerca l’ultima estrazione del mese disponibile, individua le ruote
+        con un solo numero zerato in 1ª, 2ª, 3ª o 4ª posizione, somma lo zerato con
+        il numero successivo e calcola due ambate.
+      </p>
+      <p class="note">
+        Questa pagina applica una versione tradizionale del metodo. Serve come strumento di calcolo,
+        non garantisce risultati.
+      </p>
+    </section>
+
+    <section class="controls">
+      <button id="aggiorna">Aggiorna previsioni</button>
+    </section>
+
+    <section id="riepilogo" class="card">
+      Caricamento...
+    </section>
+
+    <section>
+      <h2>Previsioni</h2>
+      <div id="listaPrevisioni" class="cards"></div>
+    </section>
+  </main>
+
+  <script src="metodo-azzerati.js"></script>
+</body>
+</html>

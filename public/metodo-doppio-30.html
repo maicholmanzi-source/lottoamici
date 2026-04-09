@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Metodo Doppio 30</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="hero">
+    <nav class="nav">
+      <a href="/">Home</a>
+      <a href="/metodi.html">Metodi</a>
+    </nav>
+
+    <h1>Metodo Doppio 30</h1>
+    <p>Versione automatizzata basata sul segnale del 30 su ruote consecutive</p>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Regola applicata</h2>
+      <p>
+        La pagina cerca il segnale più recente in cui, su due ruote consecutive,
+        compare un 30 nella stessa posizione di un altro numero.
+      </p>
+      <p>
+        Da quel confronto ricava la differenza con 30, il vertibile della differenza
+        e due terzine derivate.
+      </p>
+      <p class="note">
+        Questa è una versione automatizzata e dichiarata del Metodo Doppio 30.
+      </p>
+    </section>
+
+    <section class="controls">
+      <button id="aggiorna">Aggiorna previsioni</button>
+    </section>
+
+    <section id="riepilogo" class="card">
+      Caricamento...
+    </section>
+
+    <section>
+      <h2>Previsioni per coppia</h2>
+      <div id="listaDoppio30" class="cards"></div>
+    </section>
+  </main>
+
+  <script src="metodo-doppio-30.js"></script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Metodo 9 e 90</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="hero">
+    <nav class="nav">
+      <a href="/">Home</a>
+      <a href="/metodi.html">Metodi</a>
+    
+    </nav>
+
+    <h1>Metodo 9 e 90</h1>
+    <p>Previsioni automatiche basate sempre sull’ultima estrazione disponibile</p>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Regola applicata</h2>
+     <p>
+  La pagina controlla sempre l’ultima estrazione disponibile.
+  Se la figura del 2° estratto di una ruota è 9, propone
+  le ambate 9 e 90.
+</p>
+      <p>
+        Gli abbinamenti vengono ricavati dal 1°, 3° e 5° estratto
+        facendo -1 e +1.
+      </p>
+      <p class="note">
+        È una versione automatizzata del metodo, pensata come strumento di calcolo.
+        Non garantisce vincite.
+      </p>
+    </section>
+
+    <section class="controls">
+      <button id="aggiorna">Aggiorna previsioni</button>
+    </section>
+
+    <section id="riepilogo" class="card">
+      Caricamento...
+    </section>
+
+    <section>
+      <h2>Previsioni</h2>
+      <div id="lista990" class="cards"></div>
+    </section>
+  </main>
+
+  <script src="metodo-9-90.js"></script>
+</body>
+</html>
