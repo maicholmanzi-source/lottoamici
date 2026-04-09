@@ -4,6 +4,7 @@ const btnRicarica = document.getElementById("ricarica");
 
 const giocateMetodi = document.getElementById("giocateMetodi");
 const btnAggiornaMetodi = document.getElementById("aggiornaMetodi");
+const esitoUltimaEstrazione = document.getElementById("esitoUltimaEstrazione");
 
 function formatNumero(numero) {
   return String(numero).padStart(2, "0");
@@ -15,6 +16,32 @@ function renderPills(numeri) {
   return numeri
     .map((n) => `<span class="number-pill">${formatNumero(n)}</span>`)
     .join("");
+}
+
+function uniqueNumbers(values = []) {
+  return [...new Set(values.filter((value) => Number.isFinite(Number(value))).map((value) => Number(value)))];
+}
+
+function formatRuote(ruote = []) {
+  if (!ruote.length) return "Ruote non disponibili";
+  return ruote.join(" - ");
+}
+
+function getTipoLabel(length) {
+  switch (length) {
+    case 1:
+      return "Ambata";
+    case 2:
+      return "Ambo";
+    case 3:
+      return "Terno";
+    case 4:
+      return "Quaterna";
+    case 5:
+      return "Cinquina";
+    default:
+      return `Giocata da ${length} numeri`;
+  }
 }
 
 async function caricaEstrazioni() {
@@ -115,7 +142,9 @@ function buildAzzerati(data) {
       titolo: item.ruota,
       sottotitolo: `Concorso ${item.concorso}`,
       descrizione: `Ambate su ${item.ruota}`,
-      numeri: [item.ambata1, item.ambata2]
+      numeri: [item.ambata1, item.ambata2],
+      ruote: [item.ruota],
+      giocate: [[item.ambata1], [item.ambata2]]
     }))
   };
 }
@@ -129,7 +158,9 @@ function build990(data) {
       titolo: item.ruota,
       sottotitolo: `Concorso ${item.concorso}`,
       descrizione: `Ambate su ${item.ruota}`,
-      numeri: item.ambate || [9, 90]
+      numeri: item.ambate || [9, 90],
+      ruote: [item.ruota],
+      giocate: (item.ambate || [9, 90]).map((numero) => [numero])
     }))
   };
 }
@@ -145,7 +176,9 @@ function buildIsotopi(data) {
         titolo: item.coppia,
         sottotitolo: `Segnale ${item.dataSegnaleTesto}`,
         descrizione: `Ambata su ${prev.ruoteDiGioco.join(" - ")}`,
-        numeri: [prev.ambata]
+        numeri: [prev.ambata],
+        ruote: prev.ruoteDiGioco || [],
+        giocate: [[prev.ambata]]
       });
     });
   });
@@ -164,7 +197,9 @@ function buildGemelli(data) {
         titolo: item.coppia,
         sottotitolo: `Segnale ${item.dataSegnaleTesto}`,
         descrizione: "Ambate del metodo",
-        numeri: [prev.ambata1, prev.ambata2]
+        numeri: [prev.ambata1, prev.ambata2],
+        ruote: [item.ruota1, item.ruota2],
+        giocate: [[prev.ambata1], [prev.ambata2]]
       });
     });
   });
@@ -179,11 +214,14 @@ function buildMonco(data) {
 
   data.risultati.forEach((item) => {
     item.previsioni?.forEach((prev) => {
+      const numeri = prev.ambate || [];
       items.push({
         titolo: item.coppia,
         sottotitolo: `Isotopo ${formatNumero(prev.isotopo)}`,
         descrizione: "Ambate del Monco",
-        numeri: prev.ambate || []
+        numeri,
+        ruote: [item.ruota1, item.ruota2],
+        giocate: numeri.map((numero) => [numero])
       });
     });
   });
@@ -201,8 +239,10 @@ function buildDonPedro(data) {
       items.push({
         titolo: item.coppia,
         sottotitolo: `Isotopo ${formatNumero(prev.isotopo)}`,
-        descrizione: "Capogioco + abbinamenti",
-        numeri: [prev.capogioco, ...(prev.abbinamenti || [])]
+        descrizione: "Ambi con capogioco fisso",
+        numeri: [prev.capogioco, ...(prev.abbinamenti || [])],
+        ruote: [item.ruota1, item.ruota2],
+        giocate: prev.ambi || []
       });
     });
   });
@@ -217,11 +257,17 @@ function buildNinja(data) {
 
   data.risultati.forEach((item) => {
     item.previsioni?.forEach((prev) => {
+      const numeri = prev.ambate || [];
+      const giocate = numeri.map((numero) => [numero]);
+      if (numeri.length >= 2) giocate.push(numeri.slice(0, 2));
+
       items.push({
         titolo: item.coppia,
         sottotitolo: `Isotopo ${formatNumero(prev.isotopo)}`,
         descrizione: "Gap centrale + chiusura armonica",
-        numeri: prev.ambate || []
+        numeri,
+        ruote: [item.ruota1, item.ruota2],
+        giocate
       });
     });
   });
@@ -236,11 +282,18 @@ function buildDoppio30(data) {
 
   data.risultati.forEach((item) => {
     item.previsioni?.forEach((prev) => {
+      const numeri = uniqueNumbers([...(prev.terzina1 || []), ...(prev.terzina2 || [])]);
+      const giocate = [];
+      if (prev.terzina1?.length) giocate.push(prev.terzina1);
+      if (prev.terzina2?.length) giocate.push(prev.terzina2);
+
       items.push({
         titolo: item.coppia,
         sottotitolo: `Posizione ${prev.posizione}`,
         descrizione: "Terzine del metodo",
-        numeri: [...(prev.terzina1 || []), ...(prev.terzina2 || [])]
+        numeri,
+        ruote: [item.ruota1, item.ruota2],
+        giocate
       });
     });
   });
@@ -256,8 +309,13 @@ function buildVenere(data) {
     items: data.previsioni.map((item) => ({
       titolo: `Posizione ${item.posizione}`,
       sottotitolo: `Ruota di gioco: ${data.ruotaDiGioco || "Venezia"}`,
-      descrizione: "Capogiochi e abbinamenti",
-      numeri: [item.capogioco1, item.capogioco2, item.abbinamento1, item.abbinamento2]
+      descrizione: "Ambi con capogiochi e abbinamenti",
+      numeri: [item.capogioco1, item.capogioco2, item.abbinamento1, item.abbinamento2],
+      ruote: [data.ruotaDiGioco || "Venezia"],
+      giocate: item.ambi || [
+        [item.capogioco1, item.abbinamento1],
+        [item.capogioco2, item.abbinamento2]
+      ]
     }))
   };
 }
@@ -266,7 +324,79 @@ function limitItems(items, max = 4) {
   return items.slice(0, max);
 }
 
-function renderMetodi(groups) {
+function getBestStatusLabel(size) {
+  if (size >= 3) return `${getTipoLabel(size)} preso`;
+  if (size === 2) return "Ambo preso";
+  return "Ambata presa";
+}
+
+function evaluatePlayItem(item, latestExtraction) {
+  const ruote = item.ruote || [];
+  const giocate = (item.giocate || []).map((giocata) => uniqueNumbers(giocata)).filter((giocata) => giocata.length);
+
+  if (!latestExtraction || !ruote.length || !giocate.length) {
+    return {
+      tone: "neutral",
+      label: "Non verificata",
+      detail: "Dati insufficienti per il controllo.",
+      matches: []
+    };
+  }
+
+  let bestHit = null;
+  let bestPartial = null;
+
+  ruote.forEach((ruota) => {
+    const numeriRuota = latestExtraction.ruote?.[ruota] || [];
+
+    giocate.forEach((giocata) => {
+      const matched = giocata.filter((numero) => numeriRuota.includes(numero));
+      const result = {
+        ruota,
+        giocata,
+        matched,
+        target: giocata.length
+      };
+
+      if (matched.length >= giocata.length) {
+        if (!bestHit || giocata.length > bestHit.target) {
+          bestHit = result;
+        }
+      } else if (!bestPartial || matched.length > bestPartial.matched.length || giocata.length > bestPartial.target) {
+        bestPartial = result;
+      }
+    });
+  });
+
+  if (bestHit) {
+    return {
+      tone: "success",
+      label: getBestStatusLabel(bestHit.target),
+      detail: `${bestHit.ruota}: ${bestHit.matched.map(formatNumero).join(" - ")}`,
+      matches: bestHit.matched
+    };
+  }
+
+  if (bestPartial && bestPartial.matched.length > 0) {
+    return {
+      tone: "partial",
+      label: "Parziale",
+      detail: `${bestPartial.ruota}: ${bestPartial.matched.length}/${bestPartial.target} numeri presenti (${bestPartial.matched
+        .map(formatNumero)
+        .join(" - ")})`,
+      matches: bestPartial.matched
+    };
+  }
+
+  return {
+    tone: "empty",
+    label: "Non presa",
+    detail: `Nessun esito utile su ${formatRuote(ruote)}.`,
+    matches: []
+  };
+}
+
+function renderMetodi(groups, latestExtraction) {
   if (!giocateMetodi) return;
 
   if (!groups.length) {
@@ -277,14 +407,24 @@ function renderMetodi(groups) {
   giocateMetodi.innerHTML = groups
     .map((group) => {
       const entries = limitItems(group.items)
-        .map((item) => `
-          <div class="play-entry">
-            <p><strong>${item.titolo}</strong></p>
-            <p class="muted">${item.sottotitolo || ""}</p>
-            <p>${item.descrizione || ""}</p>
-            <div class="numbers-row">${renderPills(item.numeri || [])}</div>
+        .map((item) => {
+          const status = evaluatePlayItem(item, latestExtraction);
+          return `
+          <div class="play-entry play-entry-grid">
+            <div class="play-entry-main">
+              <p><strong>${item.titolo}</strong></p>
+              <p class="muted">${item.sottotitolo || ""}</p>
+              <p>${item.descrizione || ""}</p>
+              <p class="muted"><strong>Ruote:</strong> ${formatRuote(item.ruote || [])}</p>
+              <div class="numbers-row">${renderPills(item.numeri || [])}</div>
+            </div>
+            <div class="play-entry-status status-${status.tone}">
+              <span class="result-chip result-chip-${status.tone}">${status.label}</span>
+              <p>${status.detail}</p>
+            </div>
           </div>
-        `)
+        `;
+        })
         .join("");
 
       return `
@@ -301,6 +441,9 @@ async function caricaGiocateMetodi() {
   if (!giocateMetodi) return;
 
   giocateMetodi.innerHTML = `<div class="card">Caricamento giocate...</div>`;
+  if (esitoUltimaEstrazione) {
+    esitoUltimaEstrazione.textContent = "Sto controllando le giocate sull'ultima estrazione disponibile...";
+  }
 
   const endpoints = [
     { url: "/api/metodo-azzerati", builder: buildAzzerati },
@@ -314,18 +457,39 @@ async function caricaGiocateMetodi() {
     { url: "/api/metodo-venere", builder: buildVenere }
   ];
 
-  const results = await Promise.allSettled(
-    endpoints.map(async ({ url, builder }) => {
-      const data = await fetchJsonSafe(url);
-      return builder(data);
-    })
-  );
+  try {
+    const [metodiResults, estrazioniResults] = await Promise.all([
+      Promise.allSettled(
+        endpoints.map(async ({ url, builder }) => {
+          const data = await fetchJsonSafe(url);
+          return builder(data);
+        })
+      ),
+      Promise.allSettled([fetchJsonSafe("/api/estrazioni")])
+    ]);
 
-  const validGroups = results
-    .filter((result) => result.status === "fulfilled" && result.value && result.value.items?.length)
-    .map((result) => result.value);
+    const validGroups = metodiResults
+      .filter((result) => result.status === "fulfilled" && result.value && result.value.items?.length)
+      .map((result) => result.value);
 
-  renderMetodi(validGroups);
+    const estrazioniResult = estrazioniResults[0];
+    const latestExtraction = estrazioniResult.status === "fulfilled" ? estrazioniResult.value?.estrazioni?.[0] || null : null;
+
+    if (esitoUltimaEstrazione) {
+      if (latestExtraction) {
+        esitoUltimaEstrazione.textContent = `Colonna esito aggiornata sull'ultima estrazione disponibile: ${latestExtraction.dataTesto} (concorso ${latestExtraction.concorso}).`;
+      } else {
+        esitoUltimaEstrazione.textContent = "Non sono riuscito a caricare l'ultima estrazione per il controllo esiti.";
+      }
+    }
+
+    renderMetodi(validGroups, latestExtraction);
+  } catch (error) {
+    giocateMetodi.innerHTML = `<div class="card"><strong>Errore:</strong> ${error.message}</div>`;
+    if (esitoUltimaEstrazione) {
+      esitoUltimaEstrazione.textContent = "Errore durante il controllo delle giocate.";
+    }
+  }
 }
 
 if (btnRicarica) {
