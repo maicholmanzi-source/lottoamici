@@ -1280,3 +1280,113 @@ body.home-page .section-title-row h2,
 body.home-page .section-title-row .muted {
   text-shadow: 0 1px 0 rgba(255,255,255,0.22);
 }
+
+.nav-auth-slot {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-user-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(255, 245, 231, 0.92);
+  color: #7b2d12;
+  font-weight: bold;
+}
+
+.nav-logout-button {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-weight: bold;
+  cursor: pointer;
+  background: #8b1e1e;
+  color: white;
+}
+
+.home-access-actions {
+  justify-content: center;
+  margin-top: 18px;
+}
+
+.narrow-container {
+  max-width: 760px;
+}
+
+.auth-card {
+  padding: 24px;
+}
+
+.auth-form {
+  display: grid;
+  gap: 14px;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 8px;
+  font-weight: bold;
+}
+
+.auth-form input {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #d6c1a5;
+  font-size: 16px;
+}
+
+.admin-table-card {
+  overflow-x: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-table th,
+.admin-table td {
+  border-bottom: 1px solid #eadcc9;
+  padding: 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.admin-actions-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: bold;
+}
+
+.status-approved {
+  background: #e4f7e7;
+  color: #17633a;
+}
+
+.status-pending {
+  background: #fff4d8;
+  color: #8a5b00;
+}
+
+.status-rejected {
+  background: #fde2e2;
+  color: #8d1d1d;
+}
+
+.danger-button {
+  background: #8d1d1d;
+  color: white;
+}

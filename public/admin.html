@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin utenti</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="hero">
+    <nav class="nav">
+      <a href="/">Home</a>
+      <a href="/admin.html" class="active">Admin</a>
+      <a href="/metodi.html">Metodi</a>
+      <a href="/giocate.html">Giocate</a>
+    </nav>
+    <h1>Pannello admin</h1>
+    <p>Approva o rifiuta gli account registrati.</p>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Utenti registrati</h2>
+      <p id="adminFeedback" class="muted">Caricamento utenti...</p>
+      <div id="adminUsersWrap"></div>
+    </section>
+  </main>
+  <script src="auth.js"></script>
+</body>
+</html>

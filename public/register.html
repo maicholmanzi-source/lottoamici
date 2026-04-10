@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Registrati</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="hero">
+    <nav class="nav">
+      <a href="/">Home</a>
+      <a href="/login.html">Accedi</a>
+      <a href="/register.html" class="active">Registrati</a>
+    </nav>
+    <h1>Richiedi l'accesso</h1>
+    <p>La registrazione viene approvata manualmente dall'account admin.</p>
+  </header>
+
+  <main class="container narrow-container">
+    <section class="card auth-card">
+      <h2>Nuovo account</h2>
+      <form id="registerForm" class="auth-form">
+        <label>
+          Nome utente
+          <input type="text" name="username" required minlength="3" maxlength="24" pattern="[A-Za-z0-9._-]+" />
+        </label>
+        <label>
+          Password
+          <input type="password" name="password" required minlength="8" />
+        </label>
+        <label>
+          Conferma password
+          <input type="password" name="confirmPassword" required minlength="8" />
+        </label>
+        <button type="submit">Invia richiesta</button>
+      </form>
+      <p id="registerFeedback" class="muted"></p>
+    </section>
+  </main>
+  <script src="auth.js"></script>
+</body>
+</html>

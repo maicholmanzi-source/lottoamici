@@ -9,6 +9,15 @@ const bestMethodsMonthly = document.getElementById("bestMethodsMonthly");
 const methodsStatsGrid = document.getElementById("methodsStatsGrid");
 const methodsStatsInfo = document.getElementById("methodsStatsInfo");
 
+function getAuthStateSnapshot() {
+  return window.__authState || {
+    isAuthenticated: false,
+    canAccessProtected: false,
+    isAdmin: false,
+    user: null
+  };
+}
+
 function formatNumero(numero) {
   return String(numero).padStart(2, "0");
 }
@@ -97,7 +106,9 @@ function renderEstrazioni(data, ruotaSelezionata) {
     return;
   }
 
-  data.estrazioni.forEach((estrazione) => {
+  const visibleEstrazioni = getAuthStateSnapshot().canAccessProtected ? data.estrazioni : data.estrazioni.slice(0, 1);
+
+  visibleEstrazioni.forEach((estrazione) => {
     const card = document.createElement("div");
     card.className = "card";
 
@@ -538,7 +549,7 @@ function renderBestMethodCard(title, entry) {
       </div>
       <div class="featured-method-footer">
         <p class="featured-method-note">Periodo analizzato: ${entry.monthLabel}</p>
-        <a class="method-button" href="${entry.path}">Apri metodo</a>
+        <a class="method-button" href="${getAuthStateSnapshot().canAccessProtected ? entry.path : "/login.html"}">${getAuthStateSnapshot().canAccessProtected ? "Apri metodo" : "Accedi per vedere il metodo"}</a>
       </div>
     </article>
   `;
@@ -642,6 +653,14 @@ if (btnAggiornaMetodi) {
   btnAggiornaMetodi.addEventListener("click", caricaGiocateMetodi);
 }
 
-caricaEstrazioni();
-caricaGiocateMetodi();
-caricaStatisticheMetodi();
+function bootPageData() {
+  caricaEstrazioni();
+  caricaGiocateMetodi();
+  caricaStatisticheMetodi();
+}
+
+if (window.__authReady && typeof window.__authReady.finally === "function") {
+  window.__authReady.finally(bootPageData);
+} else {
+  bootPageData();
+}

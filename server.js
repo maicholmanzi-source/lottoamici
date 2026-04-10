@@ -2,10 +2,26 @@ import express from "express";
 import * as cheerio from "cheerio";
 import path from "path";
 import { fileURLToPath } from "url";
+import {
+  clearSessionsForUser,
+  createSession,
+  createUser,
+  deleteSession,
+  ensureBootstrapAdmin,
+  findUserByUsername,
+  getSessionWithUser,
+  initAuthStore,
+  listUsers,
+  updateUserStatus,
+  verifyPassword
+} from "./auth-store.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const HOST = "0.0.0.0";
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1810,7 +1826,254 @@ function buildMethodStatsPayload(estrazioni) {
   };
 }
 
+function parseCookies(cookieHeader = "") {
+  return cookieHeader
+    .split(";")
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .reduce((acc, entry) => {
+      const [key, ...rest] = entry.split("=");
+      if (!key) return acc;
+      acc[key] = decodeURIComponent(rest.join("="));
+      return acc;
+    }, {});
+}
+
+function isApprovedUser(user) {
+  return Boolean(user && (user.role === "admin" || user.status === "approved"));
+}
+
+function authPayload(user) {
+  return {
+    isAuthenticated: Boolean(user),
+    canAccessProtected: isApprovedUser(user),
+    isAdmin: Boolean(user?.role === "admin"),
+    user: user
+      ? {
+          id: user.id,
+          username: user.username,
+          role: user.role,
+          status: user.status,
+          createdAt: user.createdAt,
+          approvedAt: user.approvedAt || null,
+          rejectedAt: user.rejectedAt || null
+        }
+      : null
+  };
+}
+
+function setSessionCookie(res, token, expiresAt) {
+  res.cookie("lotto_sid", token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    expires: new Date(expiresAt)
+  });
+}
+
+function clearSessionCookie(res) {
+  res.cookie("lotto_sid", "", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    expires: new Date(0)
+  });
+}
+
+app.use(async (req, res, next) => {
+  try {
+    const cookies = parseCookies(req.headers.cookie || "");
+    const token = cookies.lotto_sid;
+    if (!token) {
+      req.authUser = null;
+      return next();
+    }
+
+    const session = await getSessionWithUser(token);
+    req.authToken = token;
+    req.authUser = session?.user || null;
+    next();
+  } catch (error) {
+    console.error("Errore middleware auth:", error);
+    req.authUser = null;
+    next();
+  }
+});
+
+function requireApprovedPage(req, res, next) {
+  if (isApprovedUser(req.authUser)) return next();
+  if (req.authUser?.status === "pending") return res.redirect("/waiting-approval.html");
+  return res.redirect(`/login.html?next=${encodeURIComponent(req.originalUrl)}`);
+}
+
+function requireApprovedApi(req, res, next) {
+  if (isApprovedUser(req.authUser)) return next();
+  if (req.authUser?.status === "pending") {
+    return res.status(403).json({ errore: "Account in attesa di approvazione" });
+  }
+  return res.status(401).json({ errore: "Accesso richiesto" });
+}
+
+function requireAdminPage(req, res, next) {
+  if (req.authUser?.role === "admin") return next();
+  if (!req.authUser) return res.redirect("/login.html?next=/admin.html");
+  return res.redirect("/");
+}
+
+function requireAdminApi(req, res, next) {
+  if (req.authUser?.role === "admin") return next();
+  if (!req.authUser) return res.status(401).json({ errore: "Accesso richiesto" });
+  return res.status(403).json({ errore: "Permesso negato" });
+}
+
+const protectedStaticPages = [
+  "/giocate.html",
+  "/metodi.html",
+  "/verifica-schedina.html",
+  "/fai-3-fai-4.html",
+  "/metodo-9-90.html",
+  "/metodo-azzerati.html",
+  "/metodo-don-pedro.html",
+  "/metodo-doppio-30.html",
+  "/metodo-gemelli.html",
+  "/metodo-isotopi.html",
+  "/metodo-monco.html",
+  "/metodo-ninja.html",
+  "/metodo-venere.html"
+];
+
+protectedStaticPages.forEach((routePath) => {
+  app.get(routePath, requireApprovedPage, (req, res) => {
+    res.sendFile(path.join(__dirname, "public", routePath.replace(/^\//, "")));
+  });
+});
+
+app.get("/login.html", (req, res) => {
+  if (isApprovedUser(req.authUser)) return res.redirect("/");
+  if (req.authUser?.status === "pending") return res.redirect("/waiting-approval.html");
+  res.sendFile(path.join(__dirname, "public", "login.html"));
+});
+
+app.get("/register.html", (req, res) => {
+  if (isApprovedUser(req.authUser)) return res.redirect("/");
+  if (req.authUser?.status === "pending") return res.redirect("/waiting-approval.html");
+  res.sendFile(path.join(__dirname, "public", "register.html"));
+});
+
+app.get("/waiting-approval.html", (req, res) => {
+  if (!req.authUser) return res.redirect("/login.html");
+  if (isApprovedUser(req.authUser)) return res.redirect("/");
+  res.sendFile(path.join(__dirname, "public", "waiting-approval.html"));
+});
+
+app.get("/admin.html", requireAdminPage, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "admin.html"));
+});
+
 app.use(express.static(path.join(__dirname, "public")));
+
+app.get("/api/auth/me", (req, res) => {
+  res.json(authPayload(req.authUser));
+});
+
+app.post("/api/auth/register", async (req, res) => {
+  try {
+    const username = String(req.body?.username || "").trim();
+    const password = String(req.body?.password || "");
+
+    if (!/^[a-zA-Z0-9._-]{3,24}$/.test(username)) {
+      return res.status(400).json({ errore: "Nome utente non valido. Usa 3-24 caratteri tra lettere, numeri, punto, trattino o underscore." });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({ errore: "La password deve avere almeno 8 caratteri." });
+    }
+
+    const user = await createUser({ username, password });
+    res.status(201).json({
+      messaggio: "Registrazione inviata. Ora attendi l'approvazione dell'admin.",
+      user
+    });
+  } catch (error) {
+    res.status(400).json({ errore: error.message || "Registrazione non riuscita" });
+  }
+});
+
+app.post("/api/auth/login", async (req, res) => {
+  try {
+    const username = String(req.body?.username || "").trim();
+    const password = String(req.body?.password || "");
+    const user = await findUserByUsername(username);
+
+    if (!user || !verifyPassword(password, user)) {
+      return res.status(401).json({ errore: "Credenziali non valide" });
+    }
+
+    if (user.status === "rejected" && user.role !== "admin") {
+      return res.status(403).json({ errore: "Account non approvato. Contatta l'amministratore." });
+    }
+
+    const { token, expiresAt } = await createSession(user.id);
+    setSessionCookie(res, token, expiresAt);
+
+    const nextPath = user.role === "admin" ? "/admin.html" : user.status === "pending" ? "/waiting-approval.html" : "/";
+    res.json({
+      messaggio: user.status === "pending" ? "Accesso eseguito. Il tuo account è in attesa di approvazione." : "Accesso eseguito.",
+      nextPath,
+      ...authPayload({
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        status: user.status,
+        createdAt: user.createdAt,
+        approvedAt: user.approvedAt || null,
+        rejectedAt: user.rejectedAt || null
+      })
+    });
+  } catch (error) {
+    res.status(500).json({ errore: error.message || "Login non riuscito" });
+  }
+});
+
+app.post("/api/auth/logout", async (req, res) => {
+  try {
+    if (req.authToken) await deleteSession(req.authToken);
+    clearSessionCookie(res);
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ errore: "Logout non riuscito" });
+  }
+});
+
+app.get("/api/admin/users", requireAdminApi, async (req, res) => {
+  try {
+    const users = await listUsers();
+    res.json({ users });
+  } catch (error) {
+    res.status(500).json({ errore: "Impossibile leggere gli utenti" });
+  }
+});
+
+app.post("/api/admin/users/:id/status", requireAdminApi, async (req, res) => {
+  try {
+    const status = String(req.body?.status || "");
+    if (!["approved", "rejected", "pending"].includes(status)) {
+      return res.status(400).json({ errore: "Stato non valido" });
+    }
+    const user = await updateUserStatus(req.params.id, status);
+    if (!user) {
+      return res.status(404).json({ errore: "Utente non trovato" });
+    }
+    if (status !== "approved") {
+      await clearSessionsForUser(user.id);
+    }
+    res.json({ messaggio: `Utente ${user.username} aggiornato a ${status}.`, user });
+  } catch (error) {
+    res.status(500).json({ errore: "Aggiornamento utente non riuscito" });
+  }
+});
 
 app.get("/api/estrazioni", async (req, res) => {
   try {
@@ -1822,7 +2085,7 @@ app.get("/api/estrazioni", async (req, res) => {
   }
 });
 
-app.get("/api/giocate-metodi", async (req, res) => {
+app.get("/api/giocate-metodi", requireApprovedApi, async (req, res) => {
   try {
     const estrazioni = await getAllEstrazioni();
     const gruppi = getGiocateMetodiConEsiti(estrazioni);
@@ -1840,7 +2103,19 @@ app.get("/api/giocate-metodi", async (req, res) => {
 app.get("/api/metodi-stats", async (req, res) => {
   try {
     const estrazioni = await getAllEstrazioni();
-    res.json(buildMethodStatsPayload(estrazioni));
+    const payload = buildMethodStatsPayload(estrazioni);
+    if (!isApprovedUser(req.authUser)) {
+      return res.json({
+        updatedAt: payload.updatedAt,
+        currentMonthKey: payload.currentMonthKey,
+        currentMonthLabel: payload.currentMonthLabel,
+        previousMonthKey: payload.previousMonthKey,
+        previousMonthLabel: payload.previousMonthLabel,
+        bestCurrentMonth: payload.bestCurrentMonth,
+        bestPreviousMonth: payload.bestPreviousMonth
+      });
+    }
+    res.json(payload);
   } catch (error) {
     console.error("Errore /api/metodi-stats:", error);
     res.status(500).json({ errore: "Impossibile leggere le statistiche dei metodi", dettaglio: error.message });
@@ -1870,7 +2145,7 @@ app.get("/api/ruota/:nome", async (req, res) => {
   }
 });
 
-app.get("/api/metodo-azzerati", async (req, res) => {
+app.get("/api/metodo-azzerati", requireApprovedApi, async (req, res) => {
   try {
     const estrazioni = await getAllEstrazioni();
     res.json(getPrevisioniAzzerati(estrazioni));
@@ -1880,7 +2155,7 @@ app.get("/api/metodo-azzerati", async (req, res) => {
   }
 });
 
-app.get("/api/metodo-monco", async (req, res) => {
+app.get("/api/metodo-monco", requireApprovedApi, async (req, res) => {
   try {
     const estrazioni = await getAllEstrazioni();
     res.json(getPrevisioniMonco(estrazioni));
@@ -1890,7 +2165,7 @@ app.get("/api/metodo-monco", async (req, res) => {
   }
 });
 
-app.get("/api/metodo-9-90", async (req, res) => {
+app.get("/api/metodo-9-90", requireApprovedApi, async (req, res) => {
   try {
     const estrazioni = await getAllEstrazioni();
     res.json(getPrevisioni990(estrazioni));
@@ -1900,7 +2175,7 @@ app.get("/api/metodo-9-90", async (req, res) => {
   }
 });
 
-app.get("/api/metodo-isotopi", async (req, res) => {
+app.get("/api/metodo-isotopi", requireApprovedApi, async (req, res) => {
   try {
     const estrazioni = await getAllEstrazioni();
     res.json(getPrevisioniIsotopi(estrazioni));
@@ -1910,7 +2185,7 @@ app.get("/api/metodo-isotopi", async (req, res) => {
   }
 });
 
-app.get("/api/metodo-gemelli", async (req, res) => {
+app.get("/api/metodo-gemelli", requireApprovedApi, async (req, res) => {
   try {
     const estrazioni = await getAllEstrazioni();
     res.json(getPrevisioniGemelli(estrazioni));
@@ -1920,7 +2195,7 @@ app.get("/api/metodo-gemelli", async (req, res) => {
   }
 });
 
-app.get("/api/metodo-don-pedro", async (req, res) => {
+app.get("/api/metodo-don-pedro", requireApprovedApi, async (req, res) => {
   try {
     const estrazioni = await getAllEstrazioni();
     res.json(getPrevisioniDonPedro(estrazioni));
@@ -1930,7 +2205,7 @@ app.get("/api/metodo-don-pedro", async (req, res) => {
   }
 });
 
-app.get("/api/metodo-ninja", async (req, res) => {
+app.get("/api/metodo-ninja", requireApprovedApi, async (req, res) => {
   try {
     const estrazioni = await getAllEstrazioni();
     res.json(getPrevisioniNinja(estrazioni));
@@ -1940,7 +2215,7 @@ app.get("/api/metodo-ninja", async (req, res) => {
   }
 });
 
-app.get("/api/metodo-doppio-30", async (req, res) => {
+app.get("/api/metodo-doppio-30", requireApprovedApi, async (req, res) => {
   try {
     const estrazioni = await getAllEstrazioni();
     res.json(getPrevisioniDoppio30(estrazioni));
@@ -1950,7 +2225,7 @@ app.get("/api/metodo-doppio-30", async (req, res) => {
   }
 });
 
-app.get("/api/metodo-venere", async (req, res) => {
+app.get("/api/metodo-venere", requireApprovedApi, async (req, res) => {
   try {
     const estrazioni = await getAllEstrazioni();
     res.json(getPrevisioniVenere(estrazioni));
@@ -1960,6 +2235,16 @@ app.get("/api/metodo-venere", async (req, res) => {
   }
 });
 
-app.listen(PORT, HOST, () => {
-  console.log(`Server avviato su http://${HOST}:${PORT}`);
-});
+(async () => {
+  try {
+    await initAuthStore();
+    const adminUser = await ensureBootstrapAdmin();
+    console.log(`Account admin pronto: ${adminUser.username}`);
+    app.listen(PORT, HOST, () => {
+      console.log(`Server avviato su http://${HOST}:${PORT}`);
+    });
+  } catch (error) {
+    console.error("Avvio auth non riuscito:", error);
+    process.exit(1);
+  }
+})();
