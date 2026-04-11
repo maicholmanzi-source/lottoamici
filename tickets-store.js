@@ -1,76 +1,54 @@
-import fs from 'fs/promises';
-import path from 'path';
 import crypto from 'crypto';
-import { fileURLToPath } from 'url';
+import { initDatabase, query } from './db.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const DATA_DIR = path.join(__dirname, 'data');
-const DATA_FILE = path.join(DATA_DIR, 'user-tickets.json');
-
-const DEFAULT_DATA = {
-  tickets: []
-};
-
-async function ensureDataFile() {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  try {
-    await fs.access(DATA_FILE);
-  } catch {
-    await fs.writeFile(DATA_FILE, JSON.stringify(DEFAULT_DATA, null, 2), 'utf8');
-  }
-}
-
-async function loadData() {
-  await ensureDataFile();
-  try {
-    const raw = await fs.readFile(DATA_FILE, 'utf8');
-    const parsed = JSON.parse(raw || '{}');
-    return {
-      tickets: Array.isArray(parsed.tickets) ? parsed.tickets : []
-    };
-  } catch {
-    return { ...DEFAULT_DATA };
-  }
-}
-
-async function saveData(data) {
-  await ensureDataFile();
-  await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
+function mapRowToTicket(row) {
+  const payload = row.payload || {};
+  return {
+    id: row.id,
+    userId: String(row.user_id),
+    createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
+    updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : row.updated_at,
+    ...payload
+  };
 }
 
 export async function initTicketsStore() {
-  await ensureDataFile();
+  await initDatabase();
 }
 
 export async function listTicketsByUser(userId) {
-  const data = await loadData();
-  return data.tickets
-    .filter((ticket) => String(ticket.userId) === String(userId))
-    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  await initDatabase();
+  const result = await query(
+    `
+      SELECT id, user_id, payload, created_at, updated_at
+      FROM user_tickets
+      WHERE user_id = $1
+      ORDER BY created_at DESC
+    `,
+    [userId]
+  );
+  return result.rows.map(mapRowToTicket);
 }
 
 export async function createTicket(userId, payload) {
-  const data = await loadData();
-  const ticket = {
-    id: crypto.randomUUID(),
-    userId: String(userId),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    ...payload
-  };
-  data.tickets.push(ticket);
-  await saveData(data);
-  return ticket;
+  await initDatabase();
+  const id = crypto.randomUUID();
+  const result = await query(
+    `
+      INSERT INTO user_tickets (id, user_id, payload, created_at, updated_at)
+      VALUES ($1, $2, $3::jsonb, NOW(), NOW())
+      RETURNING id, user_id, payload, created_at, updated_at
+    `,
+    [id, userId, JSON.stringify(payload)]
+  );
+  return mapRowToTicket(result.rows[0]);
 }
 
 export async function deleteTicket(userId, ticketId) {
-  const data = await loadData();
-  const before = data.tickets.length;
-  data.tickets = data.tickets.filter((ticket) => !(String(ticket.userId) === String(userId) && String(ticket.id) === String(ticketId)));
-  const deleted = data.tickets.length !== before;
-  if (deleted) {
-    await saveData(data);
-  }
-  return deleted;
+  await initDatabase();
+  const result = await query(
+    `DELETE FROM user_tickets WHERE user_id = $1 AND id = $2`,
+    [userId, ticketId]
+  );
+  return result.rowCount > 0;
 }

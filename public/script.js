@@ -902,7 +902,7 @@ function toggleMyTicketModeOptions() {
 }
 
 function parseMyTicketNumbers(raw) {
-  return [...new Set(String(raw || '').match(/(?:[1-9]|[1-8]\d|90)/g)?.map(Number) || [])].slice(0, 10);
+  return [...new Set(String(raw || '').match(/\b(?:[1-9]|[1-8]\d|90)\b/g)?.map(Number) || [])].slice(0, 10);
 }
 
 function collectMyTicketPayload() {
@@ -983,7 +983,7 @@ async function caricaMieSchedine() {
   if (!mieSchedineList) return;
   mieSchedineList.innerHTML = '<div class="card">Caricamento schedine...</div>';
   try {
-    const data = await fetchJsonSafe('/api/mie-schedine');
+    const data = await authFetchJson('/api/mie-schedine');
     const tickets = data.tickets || [];
     if (!tickets.length) {
       mieSchedineList.innerHTML = '<div class="card">Non hai ancora salvato schedine personali.</div>';

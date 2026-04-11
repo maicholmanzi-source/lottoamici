@@ -1,6 +1,6 @@
 # sito-lotto
 
-Deploy pronto per Railway.
+Deploy pronto per Railway con persistenza su PostgreSQL.
 
 ## Accesso utenti con approvazione admin
 
@@ -10,17 +10,24 @@ Questa versione include:
 - account admin dedicato
 - approvazione o rifiuto utenti dal pannello `/admin.html`
 - contenuti pubblici limitati alla home
+- utenti, sessioni e schedine personali salvati su database PostgreSQL
 
-## Credenziali admin iniziali
+## Variabili ambiente richieste
 
-L'account admin viene creato automaticamente all'avvio con queste variabili d'ambiente:
+- `DATABASE_URL`
 - `ADMIN_USERNAME` (default: `admin`)
 - `ADMIN_PASSWORD` (default: `cambiami-subito-123`)
 
-Imposta subito una password tua nelle variabili del servizio.
+Imposta subito una password admin forte nelle variabili del servizio.
 
-## Nota importante sulla persistenza
+## Tabelle create automaticamente
 
-Gli utenti e le sessioni vengono salvati in `data/auth-data.json`.
-Senza un database o uno storage persistente, su Railway questi dati possono andare persi dopo redeploy o riavvio.
-Questa versione va bene come base funzionante; per produzione conviene passare a un database persistente.
+All'avvio dell'app vengono create automaticamente queste tabelle, se non esistono già:
+- `users`
+- `sessions`
+- `user_tickets`
+
+## Nota Railway
+
+Su Railway aggiungi un servizio PostgreSQL al progetto e collega `DATABASE_URL` all'app.
+Dopo il deploy, utenti e schedine personali resteranno salvati nel database anche dopo redeploy o riavvii.
