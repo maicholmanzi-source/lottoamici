@@ -28,11 +28,22 @@
         <div>
           <h2>Le mie schedine pronte</h2>
           <p class="muted">
-            Ogni box propone una giocata pronta per metodo. Quando il metodo non basta da solo,
-            il sistema aggiunge automaticamente il numero di supporto e te lo segnala chiaramente.
+            Scegli se vuoi giocare in ambo, terno, quaterna o cinquina: il sistema genera schedine casuali
+            tenendo conto dei numeri del metodo e completa automaticamente i numeri mancanti quando serve.
           </p>
         </div>
-        <button id="aggiornaSchedinePronte" type="button">Rigenera schedine</button>
+        <div class="schedine-toolbar">
+          <div class="ticket-filter-group">
+            <label for="tipoSchedina">Tipo di giocata</label>
+            <select id="tipoSchedina">
+              <option value="ambo">Ambo</option>
+              <option value="terno">Terno</option>
+              <option value="quaterna">Quaterna</option>
+              <option value="cinquina">Cinquina</option>
+            </select>
+          </div>
+          <button id="aggiornaSchedinePronte" type="button">Rigenera schedine</button>
+        </div>
       </div>
 
       <div id="schedinePronteGrid" class="cards">

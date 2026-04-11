@@ -1484,65 +1484,176 @@ function scorePlayForTicket(giocata = []) {
   return (weightMap[size] || 0) * 1000 - sum;
 }
 
-function pickPreferredTicketPlay(item) {
+function shuffleArray(values = []) {
+  const clone = [...values];
+  for (let i = clone.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [clone[i], clone[j]] = [clone[j], clone[i]];
+  }
+  return clone;
+}
+
+function getRequestedTicketSize(tipo = "ambo") {
+  switch (String(tipo || "ambo").toLowerCase()) {
+    case "terno":
+      return 3;
+    case "quaterna":
+      return 4;
+    case "cinquina":
+      return 5;
+    case "ambo":
+    default:
+      return 2;
+  }
+}
+
+function getRequestedTicketTypeLabel(tipo = "ambo") {
+  const size = getRequestedTicketSize(tipo);
+  return getTipoGiocataLabel(size);
+}
+
+function buildDerivedCandidates(numbers = []) {
+  const derived = [];
+  numbers.forEach((numero) => {
+    const normalized = normalizeLottoNumber(numero);
+    derived.push(normalized);
+    derived.push(getVertibile(normalized));
+    derived.push(normalizeLottoNumber(91 - normalized));
+    derived.push(shiftLotto(normalized, 9));
+    derived.push(shiftLotto(normalized, -9));
+    derived.push(shiftLotto(normalized, 18));
+    derived.push(shiftLotto(normalized, -18));
+    derived.push(ambataDiDecina(normalized));
+    derived.push(normalizeLottoNumber(normalized + 1));
+    derived.push(normalizeLottoNumber(normalized + 10));
+  });
+  return uniqueNumbers(derived.map((numero) => Number(numero)).filter((numero) => Number.isFinite(numero)));
+}
+
+function takeRandomSubset(values = [], size = 0) {
+  return shuffleArray(uniqueNumbers(values)).slice(0, size);
+}
+
+function pickRandomSignalForGroup(group) {
+  const items = Array.isArray(group?.items) ? [...group.items] : [];
+  if (!items.length) return null;
+
+  const byPriority = items.sort((a, b) => {
+    const priorityMap = { ongoing: 0, partial: 1, hit: 2, miss: 3, expired: 4 };
+    const aPriority = priorityMap[a.status?.outcome] ?? 9;
+    const bPriority = priorityMap[b.status?.outcome] ?? 9;
+    if (aPriority !== bPriority) return aPriority - bPriority;
+    return String(b.dataSegnale || "").localeCompare(String(a.dataSegnale || ""));
+  });
+
+  const playable = byPriority.filter((item) => ["ongoing", "partial"].includes(item.status?.outcome));
+  const pool = playable.length ? playable.slice(0, 4) : byPriority.slice(0, 4);
+  return pool[Math.floor(Math.random() * pool.length)] || byPriority[0];
+}
+
+function roundToHalf(value) {
+  return Math.max(0.5, Math.round(Number(value || 0) * 2) / 2);
+}
+
+function buildRecommendation(targetSize, reliability, ruoteCount = 1, colpiMassimi = null) {
+  const baseMap = { 2: 2, 3: 1.5, 4: 1, 5: 1 };
+  const base = baseMap[targetSize] || 1;
+  let bonus = 0;
+  if (Number.isFinite(reliability) && reliability >= 60) bonus += 1;
+  else if (Number.isFinite(reliability) && reliability >= 45) bonus += 0.5;
+  else if (Number.isFinite(reliability) && reliability >= 30) bonus += 0.25;
+  if (ruoteCount > 1) bonus += 0.5;
+
+  const perColpo = roundToHalf(base + bonus);
+  const colpiConsigliati = Math.max(3, Math.min(Number(colpiMassimi) || 6, 8));
+  const budgetTotale = roundToHalf(perColpo * colpiConsigliati);
+
+  return {
+    perColpo,
+    colpiConsigliati,
+    budgetTotale,
+    note: "Importo indicativo del sito, non ufficiale: meglio usare prudenza e budget basso."
+  };
+}
+
+function buildRandomTicketSelection(item, targetSize) {
   const numeriMetodo = uniqueNumbers((item.numeri || []).map((numero) => Number(numero)).filter((numero) => Number.isFinite(numero)));
   const giocateDisponibili = (item.giocate || []).map((giocata) => normalizeGiocata(giocata)).filter((giocata) => giocata.length);
   const sortedGiocate = [...giocateDisponibili].sort((a, b) => scorePlayForTicket(b) - scorePlayForTicket(a));
+  const giocateMatch = shuffleArray(sortedGiocate.filter((entry) => entry.length === targetSize));
 
-  let giocata = sortedGiocate[0] || [];
-  let autoNumero = null;
-  let note = "Schedina pronta ricavata direttamente dal metodo.";
+  let giocata = [];
+  let note = `Schedina ${getTipoGiocataLabel(targetSize).toLowerCase()} generata casualmente partendo dai numeri del metodo.`;
 
-  if (!giocata.length && numeriMetodo.length >= 2) {
-    giocata = numeriMetodo.slice(0, 2);
-    note = "Schedina pronta costruita usando i primi due numeri utili del metodo.";
-  } else if (!giocata.length && numeriMetodo.length === 1) {
-    const base = numeriMetodo[0];
-    let supporto = normalizeLottoNumber(getVertibile(base));
-    if (supporto === base) {
-      supporto = normalizeLottoNumber(base + 9);
+  if (giocateMatch.length) {
+    giocata = [...giocateMatch[0]];
+    note = `Schedina ${getTipoGiocataLabel(targetSize).toLowerCase()} estratta casualmente tra le combinazioni già suggerite dal metodo.`;
+  } else {
+    const seedPlay = shuffleArray(sortedGiocate.sort((a, b) => Math.abs(a.length - targetSize) - Math.abs(b.length - targetSize)))[0] || [];
+    if (seedPlay.length > targetSize) {
+      giocata = takeRandomSubset(seedPlay, targetSize);
+      note = `Schedina ${getTipoGiocataLabel(targetSize).toLowerCase()} ottenuta selezionando casualmente una parte della combinazione del metodo.`;
+    } else {
+      giocata = [...seedPlay];
     }
-    giocata = normalizeGiocata([base, supporto]);
-    autoNumero = supporto;
-    note = "Il metodo forniva un solo numero: il sistema ha aggiunto il vertibile come supporto automatico.";
-  } else if (giocata.length === 1) {
-    const base = giocata[0];
-    let supporto = numeriMetodo.find((numero) => numero !== base) || normalizeLottoNumber(getVertibile(base));
-    if (supporto === base) {
-      supporto = normalizeLottoNumber(base + 9);
+
+    const primaryPool = shuffleArray(uniqueNumbers([...numeriMetodo, ...sortedGiocate.flat()]));
+    const derivedPool = shuffleArray(buildDerivedCandidates(primaryPool));
+    const allNumbersPool = shuffleArray(Array.from({ length: 90 }, (_, index) => index + 1));
+    const autoNumbers = [];
+
+    for (const pool of [primaryPool, derivedPool, allNumbersPool]) {
+      for (const numero of pool) {
+        if (giocata.length >= targetSize) break;
+        if (giocata.includes(numero)) continue;
+        giocata.push(numero);
+        if (!numeriMetodo.includes(numero)) {
+          autoNumbers.push(numero);
+        }
+      }
+      if (giocata.length >= targetSize) break;
     }
-    giocata = normalizeGiocata([base, supporto]);
-    autoNumero = supporto;
-    note = numeriMetodo.find((numero) => numero !== base)
-      ? "Il sistema ha completato la giocata con un secondo numero già presente nel metodo."
-      : "Il sistema ha completato la giocata con il vertibile del numero principale.";
+
+    if (autoNumbers.length) {
+      note = `Schedina ${getTipoGiocataLabel(targetSize).toLowerCase()} completata automaticamente con numeri di supporto perché il metodo non forniva abbastanza numeri.`;
+    } else if (giocata.length === targetSize) {
+      note = `Schedina ${getTipoGiocataLabel(targetSize).toLowerCase()} costruita casualmente usando solo i numeri del metodo.`;
+    }
   }
 
-  const tipo = getTipoGiocataLabel(giocata.length);
-  const alternative = sortedGiocate
+  giocata = uniqueNumbers(giocata).slice(0, targetSize).sort((a, b) => a - b);
+  const autoNumbers = giocata.filter((numero) => !numeriMetodo.includes(numero));
+  const alternative = shuffleArray(sortedGiocate)
+    .map((entry) => entry.slice(0, targetSize).sort((a, b) => a - b))
+    .filter((entry) => entry.length >= Math.min(targetSize, 2))
+    .filter((entry, index, array) => array.findIndex((candidate) => candidate.join("-") === entry.join("-")) === index)
     .filter((entry) => entry.join("-") !== giocata.join("-"))
     .slice(0, 3);
 
   return {
     giocata,
-    tipo,
-    autoNumero,
+    tipo: getTipoGiocataLabel(targetSize),
+    autoNumbers,
     note,
     alternative,
-    numeriMetodo
+    numeriMetodo,
+    generationLabel: `Selezione casuale guidata dai numeri del metodo per creare una ${getTipoGiocataLabel(targetSize).toLowerCase()}.`
   };
 }
 
-function buildReadyTicketsPayload(estrazioni) {
+function buildReadyTicketsPayload(estrazioni, requestedType = "ambo") {
   const gruppi = getGiocateMetodiConEsiti(estrazioni);
+  const requestedSize = getRequestedTicketSize(requestedType);
+  const requestedTypeLabel = getRequestedTicketTypeLabel(requestedType);
 
   const tickets = gruppi
     .map((group) => {
-      const preferredItem = group.items.find((item) => !["miss", "expired"].includes(item.status?.outcome)) || group.items[0];
+      const preferredItem = pickRandomSignalForGroup(group);
       if (!preferredItem) return null;
 
-      const scelta = pickPreferredTicketPlay(preferredItem);
-      if (!scelta.giocata.length) return null;
+      const scelta = buildRandomTicketSelection(preferredItem, requestedSize);
+      if (!scelta.giocata.length || scelta.giocata.length !== requestedSize) return null;
+      const recommendation = buildRecommendation(requestedSize, group.reliability ?? null, (preferredItem.ruote || []).length, preferredItem.colpiMassimi ?? null);
 
       return {
         nome: group.nome,
@@ -1561,10 +1672,14 @@ function buildReadyTicketsPayload(estrazioni) {
         status: preferredItem.status || null,
         ticket: scelta.giocata,
         ticketTipo: scelta.tipo,
-        autoNumero: scelta.autoNumero,
+        requestedType,
+        requestedTypeLabel,
+        autoNumbers: scelta.autoNumbers,
         numeriMetodo: scelta.numeriMetodo,
         alternative: scelta.alternative,
         note: scelta.note,
+        generationLabel: scelta.generationLabel,
+        recommendation,
         colpiMassimi: preferredItem.colpiMassimi ?? null,
         colpiPassati: preferredItem.colpiPassati ?? null
       };
@@ -1580,6 +1695,8 @@ function buildReadyTicketsPayload(estrazioni) {
   return {
     generatedAt: new Date().toISOString(),
     updatedAt: estrazioni[0] || null,
+    requestedType,
+    requestedTypeLabel,
     tickets
   };
 }
@@ -2211,8 +2328,10 @@ app.get("/api/giocate-metodi", requireApprovedApi, async (req, res) => {
 
 app.get("/api/schedine-pronte", requireApprovedApi, async (req, res) => {
   try {
+    const tipoRichiesto = String(req.query.tipo || "ambo").toLowerCase();
+    const tipoValido = ["ambo", "terno", "quaterna", "cinquina"].includes(tipoRichiesto) ? tipoRichiesto : "ambo";
     const estrazioni = await getAllEstrazioni();
-    const payload = buildReadyTicketsPayload(estrazioni);
+    const payload = buildReadyTicketsPayload(estrazioni, tipoValido);
     res.json(payload);
   } catch (error) {
     console.error("Errore /api/schedine-pronte:", error);

@@ -10,6 +10,7 @@ const methodsStatsGrid = document.getElementById("methodsStatsGrid");
 const methodsStatsInfo = document.getElementById("methodsStatsInfo");
 const schedinePronteGrid = document.getElementById("schedinePronteGrid");
 const btnAggiornaSchedinePronte = document.getElementById("aggiornaSchedinePronte");
+const tipoSchedinaSelect = document.getElementById("tipoSchedina");
 const schedineInfo = document.getElementById("schedineInfo");
 
 function getAuthStateSnapshot() {
@@ -19,6 +20,17 @@ function getAuthStateSnapshot() {
     isAdmin: false,
     user: null
   };
+}
+
+
+function getRequestedSchedinaType() {
+  return tipoSchedinaSelect?.value || 'ambo';
+}
+
+function formatEuro(value) {
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return 'N/D';
+  return `${amount.toFixed(2).replace('.', ',')} €`;
 }
 
 function formatNumero(numero) {
@@ -514,10 +526,26 @@ function formatTicketNumbers(numbers = []) {
   return numbers.map((n) => formatNumero(n)).join(' - ');
 }
 
+function renderTicketBoardNumbers(numbers = [], autoNumbers = []) {
+  if (!Array.isArray(numbers) || !numbers.length) {
+    return '<span class="ticket-paper-empty">Numeri da definire</span>';
+  }
+
+  const autoSet = new Set((autoNumbers || []).map((n) => String(Number(n))));
+  return numbers
+    .map((n) => {
+      const normalized = String(Number(n));
+      const isAuto = autoSet.has(normalized);
+      return `<span class="ticket-paper-number${isAuto ? ' is-auto' : ''}">${formatNumero(n)}</span>`;
+    })
+    .join('');
+}
+
 function renderTicketCard(ticket) {
   const status = ticket.status || { tone: 'neutral', label: 'Da controllare', detail: 'Esito non disponibile.', meta: {} };
-  const autoNote = ticket.autoNumero
-    ? `<p class="muted"><strong>Numero aggiunto dal sistema:</strong> ${formatNumero(ticket.autoNumero)}</p>`
+  const autoNumbers = Array.isArray(ticket.autoNumbers) ? ticket.autoNumbers : [];
+  const autoNote = autoNumbers.length
+    ? `<p class="muted"><strong>Numeri aggiunti dal sistema:</strong> ${formatTicketNumbers(autoNumbers)}</p>`
     : '';
   const alternativeHtml = Array.isArray(ticket.alternative) && ticket.alternative.length
     ? `<div class="ticket-alt-wrap"><strong>Alternative del metodo:</strong><div class="ticket-alt-list">${ticket.alternative
@@ -526,12 +554,16 @@ function renderTicketCard(ticket) {
     : '';
   const reliabilityText = formatPercent(ticket.reliability);
   const rankText = ticket.rank ? `${ticket.rank}° posto` : 'Storico';
+  const recommendation = ticket.recommendation || {};
+  const ruoteText = formatRuote(ticket.ruote || []);
+  const colpiText = recommendation.colpiConsigliati || status.meta?.finestra || 'N/D';
+  const footerSignal = ticket.dataSegnaleTesto || 'Segnale non disponibile';
 
   return `
     <article class="card ticket-card ${ticket.podiumClass || ''}">
       <div class="method-summary-header">
         <div>
-          <p class="method-overline">Schedina pronta</p>
+          <p class="method-overline">Schedina casuale dal metodo</p>
           <h3>${ticket.nome}</h3>
         </div>
         <span class="method-header-chip">${ticket.podiumLabel || 'Metodo'}</span>
@@ -541,15 +573,73 @@ function renderTicketCard(ticket) {
         <span class="method-reliability-pill">Affidabilità ${reliabilityText}</span>
       </div>
       <div class="ticket-ready-box">
-        <div>
+        <div class="ticket-facsimile">
+          <div class="ticket-paper-topline">
+            <span class="ticket-paper-brand">Schedina consigliata</span>
+            <span class="ticket-paper-type">${ticket.ticketTipo || 'Giocata'}</span>
+          </div>
+          <div class="ticket-paper-divider"></div>
+          <div class="ticket-paper-meta-grid">
+            <div class="ticket-paper-meta-item">
+              <span>Metodo</span>
+              <strong>${ticket.nome}</strong>
+            </div>
+            <div class="ticket-paper-meta-item align-right">
+              <span>Podio</span>
+              <strong>${rankText}</strong>
+            </div>
+            <div class="ticket-paper-meta-item">
+              <span>Ruote</span>
+              <strong>${ruoteText}</strong>
+            </div>
+            <div class="ticket-paper-meta-item align-right">
+              <span>Segnale</span>
+              <strong>${footerSignal}</strong>
+            </div>
+          </div>
+          <div class="ticket-paper-section">
+            <span class="ticket-paper-label">Numeri in gioco</span>
+            <div class="ticket-paper-numbers">${renderTicketBoardNumbers(ticket.ticket || [], autoNumbers)}</div>
+          </div>
+          <div class="ticket-paper-strip">
+            <div><span>Sorte</span><strong>${ticket.ticketTipo || 'Giocata'}</strong></div>
+            <div><span>Importo</span><strong>${formatEuro(recommendation.perColpo)}</strong></div>
+            <div><span>Colpi</span><strong>${colpiText}</strong></div>
+          </div>
+          <div class="ticket-paper-footer">
+            <span>${ticket.generationLabel || 'Selezione casuale guidata dal metodo'}</span>
+            <span>${ticket.concorso ? `Concorso ${ticket.concorso}` : 'Schedina pronta'}</span>
+          </div>
+        </div>
+        <div class="ticket-main-play ticket-details-panel">
+          <span class="ticket-kind-chip">${ticket.ticketTipo || 'Giocata'}</span>
           <p class="muted"><strong>${ticket.titolo || 'Segnale attivo'}</strong></p>
           <p class="muted">${ticket.sottotitolo || ''}</p>
           <p>${ticket.descrizione || ''}</p>
+          <div class="ticket-details-list">
+            <div class="ticket-detail-item"><span>Schedina</span><strong>${formatTicketNumbers(ticket.ticket || [])}</strong></div>
+            <div class="ticket-detail-item"><span>Ruote</span><strong>${ruoteText}</strong></div>
+            <div class="ticket-detail-item"><span>Importo sito</span><strong>${recommendation.note || 'Indicazione non disponibile.'}</strong></div>
+          </div>
+          ${autoNote}
+          ${alternativeHtml}
         </div>
-        <div class="ticket-main-play">
-          <span class="ticket-kind-chip">${ticket.ticketTipo || 'Giocata'}</span>
-          <div class="numbers-row">${renderPills(ticket.ticket || [])}</div>
-          <p class="muted"><strong>Ruote:</strong> ${formatRuote(ticket.ruote || [])}</p>
+      </div>
+      <div class="ticket-budget-box">
+        <div class="budget-item">
+          <span>Importo consigliato</span>
+          <strong>${formatEuro(recommendation.perColpo)}</strong>
+          <small>per colpo</small>
+        </div>
+        <div class="budget-item">
+          <span>Colpi suggeriti</span>
+          <strong>${recommendation.colpiConsigliati || 'N/D'}</strong>
+          <small>finestra indicativa</small>
+        </div>
+        <div class="budget-item">
+          <span>Budget totale</span>
+          <strong>${formatEuro(recommendation.budgetTotale)}</strong>
+          <small>indicativo</small>
         </div>
       </div>
       <div class="play-entry play-entry-grid compact-ticket-status">
@@ -557,8 +647,6 @@ function renderTicketCard(ticket) {
           <p><strong>Schedina consigliata:</strong> ${formatTicketNumbers(ticket.ticket || [])}</p>
           <p class="muted"><strong>Segnale:</strong> ${ticket.dataSegnaleTesto || 'N/D'}${ticket.concorso ? ` · Concorso ${ticket.concorso}` : ''}</p>
           <p class="muted">${ticket.note || ''}</p>
-          ${autoNote}
-          ${alternativeHtml}
         </div>
         <div class="play-entry-status status-${status.tone || 'neutral'}">
           <span class="result-chip result-chip-${status.tone || 'neutral'}">${status.label || 'Stato'}</span>
@@ -580,13 +668,16 @@ function renderTicketCard(ticket) {
 async function caricaSchedinePronte() {
   if (!schedinePronteGrid) return;
 
+  const tipo = getRequestedSchedinaType();
+  const tipoLabelMap = { ambo: 'ambi', terno: 'terni', quaterna: 'quaterne', cinquina: 'cinquine' };
+
   schedinePronteGrid.innerHTML = `<div class="card">Caricamento schedine...</div>`;
   if (schedineInfo) {
-    schedineInfo.textContent = 'Sto selezionando le schedine più utili partendo dai metodi attivi...';
+    schedineInfo.textContent = `Sto generando ${tipoLabelMap[tipo] || 'schedine'} casuali guidate dai metodi attivi...`;
   }
 
   try {
-    const data = await fetchJsonSafe('/api/schedine-pronte');
+    const data = await fetchJsonSafe(`/api/schedine-pronte?tipo=${encodeURIComponent(tipo)}`);
     const tickets = data.tickets || [];
 
     if (!tickets.length) {
@@ -600,7 +691,7 @@ async function caricaSchedinePronte() {
     schedinePronteGrid.innerHTML = tickets.map(renderTicketCard).join('');
     if (schedineInfo) {
       const updated = data.updatedAt ? `${data.updatedAt.dataTesto} (concorso ${data.updatedAt.concorso})` : 'dato non disponibile';
-      schedineInfo.textContent = `Schedine generate dai metodi ordinati per affidabilità. Ultima estrazione usata: ${updated}.`;
+      schedineInfo.textContent = `Schedine ${data.requestedTypeLabel || tipo} generate casualmente dai metodi e ordinate per affidabilità. Ultima estrazione usata: ${updated}.`;
     }
   } catch (error) {
     schedinePronteGrid.innerHTML = `<div class="card"><strong>Errore:</strong> ${error.message}</div>`;
@@ -760,6 +851,10 @@ if (btnAggiornaMetodi) {
 
 if (btnAggiornaSchedinePronte) {
   btnAggiornaSchedinePronte.addEventListener("click", caricaSchedinePronte);
+}
+
+if (tipoSchedinaSelect) {
+  tipoSchedinaSelect.addEventListener("change", caricaSchedinePronte);
 }
 
 function bootPageData() {
