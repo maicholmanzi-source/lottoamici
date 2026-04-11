@@ -23,6 +23,28 @@
   </header>
 
   <main class="container">
+    <section id="homeChatSection" class="card home-chat-card" hidden>
+      <div class="section-title-row home-chat-heading">
+        <div>
+          <h2>Chat dei registrati</h2>
+          <p class="muted">Messaggi visibili solo agli utenti approvati. Ogni messaggio si auto-cancella dopo 24 ore.</p>
+        </div>
+        <span class="chat-live-chip">Live 24h</span>
+      </div>
+      <form id="homeChatForm" class="home-chat-form">
+        <label for="homeChatInput" class="sr-only">Scrivi un messaggio</label>
+        <textarea id="homeChatInput" name="message" maxlength="280" rows="2" placeholder="Scrivi un messaggio veloce alla community..."></textarea>
+        <div class="home-chat-form-actions">
+          <small id="homeChatCount" class="muted">0 / 280</small>
+          <button type="submit" class="method-button">Invia</button>
+        </div>
+      </form>
+      <p id="homeChatFeedback" class="muted"></p>
+      <div id="homeChatList" class="home-chat-list">
+        <div class="card subtle-card">Caricamento chat...</div>
+      </div>
+    </section>
+
     <section class="card home-highlight-card">
       <div class="section-title-row">
         <div>

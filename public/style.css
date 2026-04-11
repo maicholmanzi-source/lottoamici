@@ -1881,3 +1881,113 @@ body.home-page .section-title-row .muted {
 .my-ticket-potential-box small {
   color: #6b5a1e;
 }
+
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.home-chat-card {
+  margin-bottom: 24px;
+  background: rgba(255, 252, 245, 0.92);
+  backdrop-filter: blur(6px);
+}
+
+.home-chat-heading {
+  align-items: center;
+}
+
+.chat-live-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #7d1c1c;
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.home-chat-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.home-chat-form textarea {
+  width: 100%;
+  min-height: 92px;
+  border-radius: 18px;
+  border: 1px solid rgba(125, 28, 28, 0.22);
+  padding: 14px 16px;
+  resize: vertical;
+  font: inherit;
+  background: rgba(255,255,255,0.9);
+}
+
+.home-chat-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.home-chat-list {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.home-chat-message {
+  border-radius: 18px;
+  padding: 14px 16px;
+  background: rgba(255,255,255,0.88);
+  border: 1px solid rgba(125, 28, 28, 0.1);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+}
+
+.home-chat-message.mine {
+  border-color: rgba(13, 59, 102, 0.28);
+  background: rgba(238, 246, 255, 0.95);
+}
+
+.home-chat-message-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+  margin-bottom: 6px;
+  color: #7d1c1c;
+}
+
+.home-chat-message-head span {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.home-chat-message p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+@media (max-width: 720px) {
+  .home-chat-form-actions,
+  .home-chat-message-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

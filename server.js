@@ -22,6 +22,13 @@ import {
   initTicketsStore,
   listTicketsByUser
 } from "./tickets-store.js";
+import {
+  createChatMessage,
+  deleteExpiredChatMessages,
+  initChatStore,
+  listRecentChatMessages,
+  CHAT_TTL_HOURS
+} from "./chat-store.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -2698,6 +2705,33 @@ app.get("/api/auth/me", (req, res) => {
   res.json(authPayload(req.authUser));
 });
 
+app.get("/api/chat/messages", requireApprovedApi, async (req, res) => {
+  try {
+    const messages = await listRecentChatMessages(req.authUser.id);
+    res.json({
+      ttlHours: CHAT_TTL_HOURS,
+      messages
+    });
+  } catch (error) {
+    res.status(500).json({ errore: "Impossibile leggere la chat" });
+  }
+});
+
+app.post("/api/chat/messages", requireApprovedApi, async (req, res) => {
+  try {
+    const message = await createChatMessage(req.authUser.id, req.body?.message);
+    const messages = await listRecentChatMessages(req.authUser.id);
+    res.status(201).json({
+      messaggio: "Messaggio inviato.",
+      message,
+      ttlHours: CHAT_TTL_HOURS,
+      messages
+    });
+  } catch (error) {
+    res.status(400).json({ errore: error.message || "Invio messaggio non riuscito" });
+  }
+});
+
 app.post("/api/auth/register", async (req, res) => {
   try {
     const username = String(req.body?.username || "").trim();
@@ -3017,6 +3051,8 @@ app.get("/api/metodo-venere", requireApprovedApi, async (req, res) => {
   try {
     await initAuthStore();
     await initTicketsStore();
+    await initChatStore();
+    await deleteExpiredChatMessages();
     const adminUser = await ensureBootstrapAdmin();
     console.log(`Account admin pronto: ${adminUser.username}`);
     app.listen(PORT, HOST, () => {

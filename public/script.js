@@ -20,6 +20,13 @@ const myTicketModeSelect = document.getElementById("myTicketMode");
 const myTicketBaseOptions = document.getElementById("myTicketBaseOptions");
 const myTicketWheels = document.getElementById("myTicketWheels");
 const resetMieSchedineForm = document.getElementById("resetMieSchedineForm");
+const homeChatSection = document.getElementById("homeChatSection");
+const homeChatForm = document.getElementById("homeChatForm");
+const homeChatInput = document.getElementById("homeChatInput");
+const homeChatList = document.getElementById("homeChatList");
+const homeChatFeedback = document.getElementById("homeChatFeedback");
+const homeChatCount = document.getElementById("homeChatCount");
+let homeChatPoll = null;
 
 function getAuthStateSnapshot() {
   return window.__authState || {
@@ -983,6 +990,96 @@ function renderMyTicketWinnings(detail = []) {
   return lines.length ? lines.join('') : '<p class="muted">Nessuna combinazione vincente.</p>';
 }
 
+function formatChatTime(value) {
+  const date = value ? new Date(value) : null;
+  if (!date || Number.isNaN(date.getTime())) return '';
+  return date.toLocaleString('it-IT', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+function renderHomeChatMessages(messages = []) {
+  if (!homeChatList) return;
+  if (!messages.length) {
+    homeChatList.innerHTML = '<div class="card subtle-card">Ancora nessun messaggio nelle ultime 24 ore.</div>';
+    return;
+  }
+
+  homeChatList.innerHTML = messages
+    .map((message) => `
+      <article class="home-chat-message ${message.mine ? 'mine' : ''}">
+        <div class="home-chat-message-head">
+          <strong>${escapeHtml(message.username || 'Utente')}</strong>
+          <span>${escapeHtml(formatChatTime(message.createdAt))}</span>
+        </div>
+        <p>${escapeHtml(message.message || '')}</p>
+      </article>
+    `)
+    .join('');
+  homeChatList.scrollTop = homeChatList.scrollHeight;
+}
+
+async function loadHomeChatMessages() {
+  if (!homeChatSection || homeChatSection.hidden || !getAuthStateSnapshot().canAccessProtected) return;
+  try {
+    const data = await authFetchJson('/api/chat/messages');
+    renderHomeChatMessages(data.messages || []);
+    if (homeChatFeedback) {
+      homeChatFeedback.textContent = `Chat privata attiva · cancellazione automatica dopo ${data.ttlHours || 24} ore.`;
+    }
+  } catch (error) {
+    if (homeChatList) {
+      homeChatList.innerHTML = `<div class="card"><strong>Errore:</strong> ${escapeHtml(error.message)}</div>`;
+    }
+  }
+}
+
+function initHomeChat() {
+  if (!homeChatSection || !homeChatForm || !homeChatInput) return;
+  if (!getAuthStateSnapshot().canAccessProtected) {
+    homeChatSection.hidden = true;
+    return;
+  }
+
+  homeChatSection.hidden = false;
+  const updateCount = () => {
+    if (homeChatCount) {
+      homeChatCount.textContent = `${homeChatInput.value.length} / 280`;
+    }
+  };
+  updateCount();
+  homeChatInput.addEventListener('input', updateCount);
+
+  homeChatForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const message = String(homeChatInput.value || '').trim();
+    if (!message) {
+      if (homeChatFeedback) homeChatFeedback.textContent = 'Scrivi un messaggio prima di inviare.';
+      return;
+    }
+    if (homeChatFeedback) homeChatFeedback.textContent = 'Invio messaggio...';
+    try {
+      const data = await authFetchJson('/api/chat/messages', {
+        method: 'POST',
+        body: JSON.stringify({ message })
+      });
+      homeChatInput.value = '';
+      updateCount();
+      renderHomeChatMessages(data.messages || []);
+      if (homeChatFeedback) homeChatFeedback.textContent = data.messaggio || 'Messaggio inviato.';
+    } catch (error) {
+      if (homeChatFeedback) homeChatFeedback.textContent = error.message;
+    }
+  });
+
+  loadHomeChatMessages();
+  if (homeChatPoll) clearInterval(homeChatPoll);
+  homeChatPoll = setInterval(loadHomeChatMessages, 45000);
+}
+
 function renderMyTicketCard(ticket) {
   const evaluation = ticket.evaluation || {};
   const statusTone = evaluation.status === 'vincente' ? 'success' : evaluation.status === 'non-disponibile' ? 'warning' : 'neutral';
@@ -1086,6 +1183,7 @@ function bootPageData() {
   caricaGiocateMetodi();
   caricaStatisticheMetodi();
   caricaSchedinePronte();
+  initHomeChat();
   initMyTicketsPage();
   caricaMieSchedine();
 }

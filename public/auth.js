@@ -104,7 +104,12 @@ function renderHomeActions() {
   const controls = document.getElementById('homeControls');
   const resultsActions = document.getElementById('resultsActions');
   const visibilityNote = document.getElementById('homeVisibilityNote');
+  const homeChatSection = document.getElementById('homeChatSection');
   if (!target) return;
+
+  if (homeChatSection) {
+    homeChatSection.hidden = !state.canAccessProtected;
+  }
 
   if (state.canAccessProtected) {
     target.innerHTML = `

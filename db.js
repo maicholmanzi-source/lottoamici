@@ -96,6 +96,25 @@ export async function initDatabase() {
         CREATE INDEX IF NOT EXISTS user_tickets_user_id_idx
         ON user_tickets (user_id, created_at DESC)
       `);
+
+      await query(`
+        CREATE TABLE IF NOT EXISTS chat_messages (
+          id UUID PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          message_text TEXT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      await query(`
+        CREATE INDEX IF NOT EXISTS chat_messages_created_at_idx
+        ON chat_messages (created_at DESC)
+      `);
+
+      await query(`
+        CREATE INDEX IF NOT EXISTS chat_messages_user_id_idx
+        ON chat_messages (user_id, created_at DESC)
+      `);
     })();
   }
 
