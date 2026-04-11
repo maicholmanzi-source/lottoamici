@@ -185,6 +185,9 @@ const MONTHS = {
   dicembre: 12
 };
 
+const OCA_FIXED_ABBINAMENTI = [1, 38, 45, 71, 85];
+const OCA_COLPI_MASSIMI = 5;
+
 const METHOD_META = {
   "Metodo Azzerati": {
     slug: "azzerati",
@@ -248,6 +251,13 @@ const METHOD_META = {
     path: "/metodo-venere.html",
     descrizione: "Lavora sulla coppia Venezia-Roma e propone ambi da capogiochi e vertibili.",
     focus: "Ambi"
+  },
+  "Metodo dell'Oca": {
+    slug: "oca",
+    shortName: "Oca",
+    path: "/metodo-oca.html",
+    descrizione: "Versione automatizzata del Metodo dell'Oca: capogioco dalla somma dei 5 estratti e abbinamenti fissi per l'ambo.",
+    focus: "Ambata + ambi"
   }
 };
 
@@ -1046,6 +1056,53 @@ function getPrevisioniVenere(estrazioni) {
   };
 }
 
+function getPrevisioniOca(estrazioni) {
+  const estrazione = estrazioni[0];
+  if (!estrazione) {
+    return {
+      metodo: "Metodo dell'Oca",
+      estrazioneRilevamento: null,
+      previsioni: []
+    };
+  }
+
+  const previsioni = RUOTE.map((ruota) => {
+    const cinquina = estrazione.ruote?.[ruota] || [];
+    const somma = cinquina.reduce((acc, numero) => acc + Number(numero || 0), 0);
+    const capogioco = fuori90(somma);
+    const abbinamenti = [...OCA_FIXED_ABBINAMENTI];
+    const ambi = abbinamenti
+      .map((abbinamento) => uniqueNumbers([capogioco, abbinamento]))
+      .filter((ambo) => ambo.length >= 2);
+
+    return {
+      ruota,
+      dataRilevamento: estrazione.data,
+      dataRilevamentoTesto: estrazione.dataTesto,
+      concorso: estrazione.concorso,
+      cinquina,
+      somma,
+      capogioco,
+      abbinamenti,
+      ambi,
+      colpiMassimi: OCA_COLPI_MASSIMI,
+      colpiPassati: 0,
+      colpiRimasti: OCA_COLPI_MASSIMI
+    };
+  });
+
+  return {
+    metodo: "Metodo dell'Oca",
+    estrazioneRilevamento: {
+      data: estrazione.data,
+      dataTesto: estrazione.dataTesto,
+      concorso: estrazione.concorso
+    },
+    previsioni
+  };
+}
+
+
 
 function getTipoGiocataLabel(size) {
   switch (size) {
@@ -1273,6 +1330,27 @@ function buildGiocateGroups(estrazioni) {
         dataSegnaleTesto: venere.estrazioneRilevamento?.dataTesto,
         concorso: venere.estrazioneRilevamento?.concorso,
         colpiPassati: 0
+      }))
+    });
+  }
+
+  const oca = getPrevisioniOca(estrazioni);
+  if (oca?.previsioni?.length) {
+    groups.push({
+      nome: "Metodo dell'Oca",
+      items: oca.previsioni.map((item) => ({
+        titolo: item.ruota,
+        sottotitolo: `Concorso ${item.concorso}`,
+        descrizione: "Capogioco dalla somma della cinquina con abbinamenti fissi del metodo",
+        numeri: uniqueNumbers([item.capogioco, ...(item.abbinamenti || [])]),
+        ruote: [item.ruota],
+        giocate: [[item.capogioco], ...(item.ambi || [])],
+        dataSegnale: item.dataRilevamento,
+        dataSegnaleTesto: item.dataRilevamentoTesto,
+        concorso: item.concorso,
+        colpiMassimi: item.colpiMassimi,
+        colpiPassati: item.colpiPassati,
+        colpiRimasti: item.colpiRimasti
       }))
     });
   }
@@ -1941,6 +2019,30 @@ function buildHistoricalMethodSignals(estrazioni) {
     });
   });
 
+  estrazioni.forEach((estrazione) => {
+    RUOTE.forEach((ruota) => {
+      const cinquina = estrazione.ruote?.[ruota] || [];
+      if (cinquina.length !== 5) return;
+      const somma = cinquina.reduce((acc, numero) => acc + Number(numero || 0), 0);
+      const capogioco = fuori90(somma);
+      const colpiPassati = countDrawsAfter(estrazioni, estrazione.data);
+      signals.push({
+        metodo: "Metodo dell'Oca",
+        titolo: ruota,
+        sottotitolo: `Concorso ${estrazione.concorso}`,
+        descrizione: "Capogioco dalla somma della cinquina con abbinamenti fissi del metodo",
+        numeri: uniqueNumbers([capogioco, ...OCA_FIXED_ABBINAMENTI]),
+        ruote: [ruota],
+        giocate: [[capogioco], ...OCA_FIXED_ABBINAMENTI.map((abbinamento) => uniqueNumbers([capogioco, abbinamento])).filter((ambo) => ambo.length >= 2)],
+        dataSegnale: estrazione.data,
+        dataSegnaleTesto: estrazione.dataTesto,
+        concorso: estrazione.concorso,
+        colpiMassimi: OCA_COLPI_MASSIMI,
+        colpiPassati
+      });
+    });
+  });
+
   return signals;
 }
 
@@ -2167,6 +2269,7 @@ const protectedStaticPages = [
   "/metodo-isotopi.html",
   "/metodo-monco.html",
   "/metodo-ninja.html",
+  "/metodo-oca.html",
   "/metodo-venere.html"
 ];
 
@@ -2461,6 +2564,16 @@ app.get("/api/metodo-doppio-30", requireApprovedApi, async (req, res) => {
   } catch (error) {
     console.error("Errore metodo doppio 30:", error);
     res.status(500).json({ errore: "Impossibile calcolare il metodo Doppio 30", dettaglio: error.message });
+  }
+});
+
+app.get("/api/metodo-oca", requireApprovedApi, async (req, res) => {
+  try {
+    const estrazioni = await getAllEstrazioni();
+    res.json(getPrevisioniOca(estrazioni));
+  } catch (error) {
+    console.error("Errore metodo dell'oca:", error);
+    res.status(500).json({ errore: "Impossibile calcolare il Metodo dell'Oca", dettaglio: error.message });
   }
 });
 
