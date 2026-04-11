@@ -97,6 +97,7 @@ function renderHomeActions() {
   if (state.canAccessProtected) {
     target.innerHTML = `
       <a class="method-button" href="/metodi.html">Consulta i metodi</a>
+      <a class="method-button secondary-button" href="/schedine-pronte.html">Schedine pronte</a>
       <a class="method-button secondary-button" href="/giocate.html">Guarda le giocate</a>
       <a class="method-button secondary-button" href="/verifica-schedina.html">Verifica schedina</a>
     `;

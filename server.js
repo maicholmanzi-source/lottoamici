@@ -1476,6 +1476,114 @@ function getGiocateMetodiConEsiti(estrazioni) {
     });
 }
 
+
+function scorePlayForTicket(giocata = []) {
+  const size = giocata.length;
+  const weightMap = { 2: 50, 3: 40, 1: 30, 4: 20, 5: 10 };
+  const sum = giocata.reduce((acc, value) => acc + Number(value || 0), 0);
+  return (weightMap[size] || 0) * 1000 - sum;
+}
+
+function pickPreferredTicketPlay(item) {
+  const numeriMetodo = uniqueNumbers((item.numeri || []).map((numero) => Number(numero)).filter((numero) => Number.isFinite(numero)));
+  const giocateDisponibili = (item.giocate || []).map((giocata) => normalizeGiocata(giocata)).filter((giocata) => giocata.length);
+  const sortedGiocate = [...giocateDisponibili].sort((a, b) => scorePlayForTicket(b) - scorePlayForTicket(a));
+
+  let giocata = sortedGiocate[0] || [];
+  let autoNumero = null;
+  let note = "Schedina pronta ricavata direttamente dal metodo.";
+
+  if (!giocata.length && numeriMetodo.length >= 2) {
+    giocata = numeriMetodo.slice(0, 2);
+    note = "Schedina pronta costruita usando i primi due numeri utili del metodo.";
+  } else if (!giocata.length && numeriMetodo.length === 1) {
+    const base = numeriMetodo[0];
+    let supporto = normalizeLottoNumber(getVertibile(base));
+    if (supporto === base) {
+      supporto = normalizeLottoNumber(base + 9);
+    }
+    giocata = normalizeGiocata([base, supporto]);
+    autoNumero = supporto;
+    note = "Il metodo forniva un solo numero: il sistema ha aggiunto il vertibile come supporto automatico.";
+  } else if (giocata.length === 1) {
+    const base = giocata[0];
+    let supporto = numeriMetodo.find((numero) => numero !== base) || normalizeLottoNumber(getVertibile(base));
+    if (supporto === base) {
+      supporto = normalizeLottoNumber(base + 9);
+    }
+    giocata = normalizeGiocata([base, supporto]);
+    autoNumero = supporto;
+    note = numeriMetodo.find((numero) => numero !== base)
+      ? "Il sistema ha completato la giocata con un secondo numero già presente nel metodo."
+      : "Il sistema ha completato la giocata con il vertibile del numero principale.";
+  }
+
+  const tipo = getTipoGiocataLabel(giocata.length);
+  const alternative = sortedGiocate
+    .filter((entry) => entry.join("-") !== giocata.join("-"))
+    .slice(0, 3);
+
+  return {
+    giocata,
+    tipo,
+    autoNumero,
+    note,
+    alternative,
+    numeriMetodo
+  };
+}
+
+function buildReadyTicketsPayload(estrazioni) {
+  const gruppi = getGiocateMetodiConEsiti(estrazioni);
+
+  const tickets = gruppi
+    .map((group) => {
+      const preferredItem = group.items.find((item) => !["miss", "expired"].includes(item.status?.outcome)) || group.items[0];
+      if (!preferredItem) return null;
+
+      const scelta = pickPreferredTicketPlay(preferredItem);
+      if (!scelta.giocata.length) return null;
+
+      return {
+        nome: group.nome,
+        path: METHOD_META[group.nome]?.path || "/metodi.html",
+        rank: group.rank || null,
+        reliability: group.reliability ?? null,
+        podiumClass: group.podiumClass || "",
+        podiumLabel: group.podiumLabel || "Storico",
+        titolo: preferredItem.titolo,
+        sottotitolo: preferredItem.sottotitolo || "",
+        descrizione: preferredItem.descrizione || "",
+        ruote: preferredItem.ruote || [],
+        dataSegnale: preferredItem.dataSegnale || null,
+        dataSegnaleTesto: preferredItem.dataSegnaleTesto || preferredItem.dataSegnale || "N/D",
+        concorso: preferredItem.concorso || null,
+        status: preferredItem.status || null,
+        ticket: scelta.giocata,
+        ticketTipo: scelta.tipo,
+        autoNumero: scelta.autoNumero,
+        numeriMetodo: scelta.numeriMetodo,
+        alternative: scelta.alternative,
+        note: scelta.note,
+        colpiMassimi: preferredItem.colpiMassimi ?? null,
+        colpiPassati: preferredItem.colpiPassati ?? null
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => {
+      const aRank = a.rank ?? 999;
+      const bRank = b.rank ?? 999;
+      if (aRank !== bRank) return aRank - bRank;
+      return String(a.nome || "").localeCompare(String(b.nome || ""), "it");
+    });
+
+  return {
+    generatedAt: new Date().toISOString(),
+    updatedAt: estrazioni[0] || null,
+    tickets
+  };
+}
+
 function getMonthKeyFromDate(date) {
   return String(date || "").slice(0, 7);
 }
@@ -1930,6 +2038,7 @@ function requireAdminApi(req, res, next) {
 
 const protectedStaticPages = [
   "/giocate.html",
+  "/schedine-pronte.html",
   "/metodi.html",
   "/verifica-schedina.html",
   "/fai-3-fai-4.html",
@@ -2097,6 +2206,17 @@ app.get("/api/giocate-metodi", requireApprovedApi, async (req, res) => {
   } catch (error) {
     console.error("Errore /api/giocate-metodi:", error);
     res.status(500).json({ errore: "Impossibile leggere le giocate dei metodi", dettaglio: error.message });
+  }
+});
+
+app.get("/api/schedine-pronte", requireApprovedApi, async (req, res) => {
+  try {
+    const estrazioni = await getAllEstrazioni();
+    const payload = buildReadyTicketsPayload(estrazioni);
+    res.json(payload);
+  } catch (error) {
+    console.error("Errore /api/schedine-pronte:", error);
+    res.status(500).json({ errore: "Impossibile generare le schedine pronte", dettaglio: error.message });
   }
 });
 

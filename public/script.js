@@ -8,6 +8,9 @@ const esitoUltimaEstrazione = document.getElementById("esitoUltimaEstrazione");
 const bestMethodsMonthly = document.getElementById("bestMethodsMonthly");
 const methodsStatsGrid = document.getElementById("methodsStatsGrid");
 const methodsStatsInfo = document.getElementById("methodsStatsInfo");
+const schedinePronteGrid = document.getElementById("schedinePronteGrid");
+const btnAggiornaSchedinePronte = document.getElementById("aggiornaSchedinePronte");
+const schedineInfo = document.getElementById("schedineInfo");
 
 function getAuthStateSnapshot() {
   return window.__authState || {
@@ -505,6 +508,108 @@ async function caricaGiocateMetodi() {
 }
 
 
+
+function formatTicketNumbers(numbers = []) {
+  if (!Array.isArray(numbers) || !numbers.length) return '-';
+  return numbers.map((n) => formatNumero(n)).join(' - ');
+}
+
+function renderTicketCard(ticket) {
+  const status = ticket.status || { tone: 'neutral', label: 'Da controllare', detail: 'Esito non disponibile.', meta: {} };
+  const autoNote = ticket.autoNumero
+    ? `<p class="muted"><strong>Numero aggiunto dal sistema:</strong> ${formatNumero(ticket.autoNumero)}</p>`
+    : '';
+  const alternativeHtml = Array.isArray(ticket.alternative) && ticket.alternative.length
+    ? `<div class="ticket-alt-wrap"><strong>Alternative del metodo:</strong><div class="ticket-alt-list">${ticket.alternative
+        .map((entry) => `<span class="ticket-alt-pill">${formatTicketNumbers(entry)}</span>`)
+        .join('')}</div></div>`
+    : '';
+  const reliabilityText = formatPercent(ticket.reliability);
+  const rankText = ticket.rank ? `${ticket.rank}° posto` : 'Storico';
+
+  return `
+    <article class="card ticket-card ${ticket.podiumClass || ''}">
+      <div class="method-summary-header">
+        <div>
+          <p class="method-overline">Schedina pronta</p>
+          <h3>${ticket.nome}</h3>
+        </div>
+        <span class="method-header-chip">${ticket.podiumLabel || 'Metodo'}</span>
+      </div>
+      <div class="method-podium-meta">
+        <span class="method-rank-pill">${rankText}</span>
+        <span class="method-reliability-pill">Affidabilità ${reliabilityText}</span>
+      </div>
+      <div class="ticket-ready-box">
+        <div>
+          <p class="muted"><strong>${ticket.titolo || 'Segnale attivo'}</strong></p>
+          <p class="muted">${ticket.sottotitolo || ''}</p>
+          <p>${ticket.descrizione || ''}</p>
+        </div>
+        <div class="ticket-main-play">
+          <span class="ticket-kind-chip">${ticket.ticketTipo || 'Giocata'}</span>
+          <div class="numbers-row">${renderPills(ticket.ticket || [])}</div>
+          <p class="muted"><strong>Ruote:</strong> ${formatRuote(ticket.ruote || [])}</p>
+        </div>
+      </div>
+      <div class="play-entry play-entry-grid compact-ticket-status">
+        <div class="play-entry-main">
+          <p><strong>Schedina consigliata:</strong> ${formatTicketNumbers(ticket.ticket || [])}</p>
+          <p class="muted"><strong>Segnale:</strong> ${ticket.dataSegnaleTesto || 'N/D'}${ticket.concorso ? ` · Concorso ${ticket.concorso}` : ''}</p>
+          <p class="muted">${ticket.note || ''}</p>
+          ${autoNote}
+          ${alternativeHtml}
+        </div>
+        <div class="play-entry-status status-${status.tone || 'neutral'}">
+          <span class="result-chip result-chip-${status.tone || 'neutral'}">${status.label || 'Stato'}</span>
+          <p>${status.detail || 'Esito non disponibile.'}</p>
+          <div class="status-meta-list">
+            <div class="status-meta-item"><strong>Segnale</strong><span>${status.meta?.segnale || ticket.dataSegnaleTesto || 'N/D'}</span></div>
+            <div class="status-meta-item"><strong>Finestra</strong><span>${status.meta?.finestra || 'N/D'}</span></div>
+            <div class="status-meta-item"><strong>Colpi</strong><span>${status.meta?.avanzamento || 'N/D'}</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="ticket-footer-row">
+        <a class="method-button" href="${ticket.path || '/metodi.html'}">Apri il metodo</a>
+      </div>
+    </article>
+  `;
+}
+
+async function caricaSchedinePronte() {
+  if (!schedinePronteGrid) return;
+
+  schedinePronteGrid.innerHTML = `<div class="card">Caricamento schedine...</div>`;
+  if (schedineInfo) {
+    schedineInfo.textContent = 'Sto selezionando le schedine più utili partendo dai metodi attivi...';
+  }
+
+  try {
+    const data = await fetchJsonSafe('/api/schedine-pronte');
+    const tickets = data.tickets || [];
+
+    if (!tickets.length) {
+      schedinePronteGrid.innerHTML = `<div class="card">Nessuna schedina pronta disponibile in questo momento.</div>`;
+      if (schedineInfo) {
+        schedineInfo.textContent = 'Non ci sono schedine utili da mostrare con i dati attuali.';
+      }
+      return;
+    }
+
+    schedinePronteGrid.innerHTML = tickets.map(renderTicketCard).join('');
+    if (schedineInfo) {
+      const updated = data.updatedAt ? `${data.updatedAt.dataTesto} (concorso ${data.updatedAt.concorso})` : 'dato non disponibile';
+      schedineInfo.textContent = `Schedine generate dai metodi ordinati per affidabilità. Ultima estrazione usata: ${updated}.`;
+    }
+  } catch (error) {
+    schedinePronteGrid.innerHTML = `<div class="card"><strong>Errore:</strong> ${error.message}</div>`;
+    if (schedineInfo) {
+      schedineInfo.textContent = 'Errore durante la generazione delle schedine pronte.';
+    }
+  }
+}
+
 function formatPercent(value) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) return "In osservazione";
   return `${Number(value).toFixed(1)}%`;
@@ -653,10 +758,15 @@ if (btnAggiornaMetodi) {
   btnAggiornaMetodi.addEventListener("click", caricaGiocateMetodi);
 }
 
+if (btnAggiornaSchedinePronte) {
+  btnAggiornaSchedinePronte.addEventListener("click", caricaSchedinePronte);
+}
+
 function bootPageData() {
   caricaEstrazioni();
   caricaGiocateMetodi();
   caricaStatisticheMetodi();
+  caricaSchedinePronte();
 }
 
 if (window.__authReady && typeof window.__authReady.finally === "function") {
