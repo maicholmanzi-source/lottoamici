@@ -1733,3 +1733,120 @@ body.home-page .section-title-row .muted {
     flex-direction: column;
   }
 }
+
+.ruote-grid.compact {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.compact-wheel-option {
+  min-height: 44px;
+}
+
+.my-ticket-form {
+  display: grid;
+  gap: 16px;
+}
+
+.my-ticket-form input[type="text"],
+.my-ticket-form input[type="date"],
+.my-ticket-form input[type="number"],
+.my-ticket-form select {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d1d9e6;
+  border-radius: 12px;
+  margin-top: 6px;
+}
+
+.amounts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.inline-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.subtle-card {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.compact-form-card {
+  padding: 16px;
+}
+
+.my-ticket-form-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.my-ticket-card {
+  display: grid;
+  gap: 14px;
+}
+
+.my-ticket-card.success {
+  border-left: 6px solid #128f53;
+}
+
+.my-ticket-card.warning {
+  border-left: 6px solid #b45309;
+}
+
+.my-ticket-card.neutral {
+  border-left: 6px solid #64748b;
+}
+
+.my-ticket-card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.my-ticket-result-box {
+  min-width: 190px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  display: grid;
+  gap: 4px;
+}
+
+.my-ticket-result-box.success {
+  background: #ecfdf5;
+  border-color: #86efac;
+}
+
+.my-ticket-result-box.warning {
+  background: #fff7ed;
+  border-color: #fdba74;
+}
+
+.my-ticket-result-box.neutral {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.my-ticket-result-box strong {
+  font-size: 1.4rem;
+}
+
+@media (max-width: 720px) {
+  .my-ticket-card-top {
+    flex-direction: column;
+  }
+
+  .my-ticket-result-box {
+    width: 100%;
+  }
+}

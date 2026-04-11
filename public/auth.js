@@ -56,6 +56,18 @@ function renderAuthNav() {
       nav.appendChild(slot);
     }
 
+    const existingPrivateLink = nav.querySelector('[data-nav-private="mie-schedine"]');
+    if (state.canAccessProtected && !existingPrivateLink) {
+      const link = document.createElement('a');
+      link.href = '/mie-schedine.html';
+      link.textContent = 'Le mie schedine';
+      link.setAttribute('data-nav-private', 'mie-schedine');
+      nav.insertBefore(link, slot);
+    }
+    if (!state.canAccessProtected && existingPrivateLink) {
+      existingPrivateLink.remove();
+    }
+
     if (!state.isAuthenticated) {
       slot.innerHTML = `
         <a href="/login.html">Accedi</a>
@@ -98,6 +110,7 @@ function renderHomeActions() {
     target.innerHTML = `
       <a class="method-button" href="/metodi.html">Consulta i metodi</a>
       <a class="method-button secondary-button" href="/schedine-pronte.html">Schedine pronte</a>
+      <a class="method-button secondary-button" href="/mie-schedine.html">Le mie schedine</a>
       <a class="method-button secondary-button" href="/giocate.html">Guarda le giocate</a>
       <a class="method-button secondary-button" href="/verifica-schedina.html">Verifica schedina</a>
     `;

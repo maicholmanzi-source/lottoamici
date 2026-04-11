@@ -12,6 +12,14 @@ const schedinePronteGrid = document.getElementById("schedinePronteGrid");
 const btnAggiornaSchedinePronte = document.getElementById("aggiornaSchedinePronte");
 const tipoSchedinaSelect = document.getElementById("tipoSchedina");
 const schedineInfo = document.getElementById("schedineInfo");
+const mieSchedineForm = document.getElementById("mieSchedineForm");
+const mieSchedineList = document.getElementById("mieSchedineList");
+const mieSchedineFeedback = document.getElementById("mieSchedineFeedback");
+const mieSchedineInfo = document.getElementById("mieSchedineInfo");
+const myTicketModeSelect = document.getElementById("myTicketMode");
+const myTicketBaseOptions = document.getElementById("myTicketBaseOptions");
+const myTicketWheels = document.getElementById("myTicketWheels");
+const resetMieSchedineForm = document.getElementById("resetMieSchedineForm");
 
 function getAuthStateSnapshot() {
   return window.__authState || {
@@ -857,11 +865,193 @@ if (tipoSchedinaSelect) {
   tipoSchedinaSelect.addEventListener("change", caricaSchedinePronte);
 }
 
+function renderMyTicketWheelPicker() {
+  if (!myTicketWheels) return;
+  const ruote = ["Tutte", "Bari", "Cagliari", "Firenze", "Genova", "Milano", "Napoli", "Palermo", "Roma", "Torino", "Venezia", "Nazionale"];
+  myTicketWheels.innerHTML = ruote.map((ruota, index) => `
+    <label class="wheel-option compact-wheel-option">
+      <input type="checkbox" name="wheel" value="${ruota}" ${index === 0 ? 'checked' : ''} />
+      <span>${ruota}</span>
+    </label>
+  `).join('');
+
+  const checkboxes = [...myTicketWheels.querySelectorAll('input[type="checkbox"]')];
+  const syncWheels = (changed) => {
+    if (changed?.value === 'Tutte' && changed.checked) {
+      checkboxes.forEach((box) => {
+        if (box.value !== 'Tutte') box.checked = false;
+      });
+    }
+    if (changed?.value !== 'Tutte' && changed.checked) {
+      const tutte = checkboxes.find((box) => box.value === 'Tutte');
+      if (tutte) tutte.checked = false;
+    }
+    const selected = checkboxes.filter((box) => box.checked);
+    if (!selected.length) {
+      const tutte = checkboxes.find((box) => box.value === 'Tutte');
+      if (tutte) tutte.checked = true;
+    }
+  };
+
+  checkboxes.forEach((box) => box.addEventListener('change', () => syncWheels(box)));
+}
+
+function toggleMyTicketModeOptions() {
+  if (!myTicketModeSelect || !myTicketBaseOptions) return;
+  myTicketBaseOptions.style.display = myTicketModeSelect.value === 'base' ? '' : 'none';
+}
+
+function parseMyTicketNumbers(raw) {
+  return [...new Set(String(raw || '').match(/(?:[1-9]|[1-8]\d|90)/g)?.map(Number) || [])].slice(0, 10);
+}
+
+function collectMyTicketPayload() {
+  if (!mieSchedineForm) return null;
+  const formData = new FormData(mieSchedineForm);
+  const mode = String(formData.get('mode') || 'base');
+  const payload = {
+    date: formData.get('date'),
+    mode,
+    numbers: parseMyTicketNumbers(formData.get('numbers')),
+    wheels: formData.getAll('wheel'),
+    numberOro: mode === 'base' ? formData.get('numberOro') === 'on' : false,
+    note: formData.get('note') || ''
+  };
+
+  if (mode === 'base') {
+    payload.amounts = {
+      estratto: Number(formData.get('estratto') || 0),
+      ambo: Number(formData.get('ambo') || 0),
+      terno: Number(formData.get('terno') || 0),
+      quaterna: Number(formData.get('quaterna') || 0),
+      cinquina: Number(formData.get('cinquina') || 0)
+    };
+  }
+
+  return payload;
+}
+
+function renderMyTicketWinnings(detail = []) {
+  const lines = detail.flatMap((item) => (item.winnings || []).map((winning) => {
+    const label = winning.tipo === 'base'
+      ? 'Lotto base'
+      : winning.tipo === 'numero-oro'
+        ? 'Numero Oro'
+        : winning.tipo === 'solo-oro'
+          ? 'Solo Numero Oro'
+          : 'Lotto Più';
+    return `
+      <div class="winning-row ${winning.tipo}">
+        <span><strong>${item.ruota}</strong> · ${winning.sorte} <small>${label}</small></span>
+        <span>${formatEuro(winning.premio)}</span>
+      </div>
+    `;
+  }));
+  return lines.length ? lines.join('') : '<p class="muted">Nessuna combinazione vincente.</p>';
+}
+
+function renderMyTicketCard(ticket) {
+  const evaluation = ticket.evaluation || {};
+  const statusTone = evaluation.status === 'vincente' ? 'success' : evaluation.status === 'non-disponibile' ? 'warning' : 'neutral';
+  return `
+    <article class="card my-ticket-card ${statusTone}">
+      <div class="my-ticket-card-top">
+        <div>
+          <h3>${ticket.note ? escapeHtml(ticket.note) : 'Schedina personale'}</h3>
+          <p class="muted"><strong>Data:</strong> ${escapeHtml(ticket.displayDate || '')} · <strong>Modalità:</strong> ${escapeHtml(ticket.modeLabel || ticket.mode || '')}</p>
+          <p class="muted"><strong>Numeri:</strong> ${escapeHtml(ticket.numbersLabel || '')}</p>
+          <p class="muted"><strong>Ruote:</strong> ${escapeHtml(ticket.wheelsLabel || '')}</p>
+        </div>
+        <div class="my-ticket-result-box ${statusTone}">
+          <span>${escapeHtml(evaluation.label || 'Esito')}</span>
+          <strong>${formatEuro(evaluation.total || 0)}</strong>
+          <small>${escapeHtml(evaluation.drawDateLabel || ticket.displayDate || '')}</small>
+        </div>
+      </div>
+      <p>${escapeHtml(evaluation.summary || 'Esito non disponibile.')}</p>
+      <div class="card subtle-card compact-form-card">
+        ${renderMyTicketWinnings(evaluation.detail || [])}
+      </div>
+      <div class="ticket-footer-row">
+        <button type="button" class="danger-button" data-delete-my-ticket="${ticket.id}">Elimina</button>
+      </div>
+    </article>
+  `;
+}
+
+async function caricaMieSchedine() {
+  if (!mieSchedineList) return;
+  mieSchedineList.innerHTML = '<div class="card">Caricamento schedine...</div>';
+  try {
+    const data = await fetchJsonSafe('/api/mie-schedine');
+    const tickets = data.tickets || [];
+    if (!tickets.length) {
+      mieSchedineList.innerHTML = '<div class="card">Non hai ancora salvato schedine personali.</div>';
+      if (mieSchedineInfo) mieSchedineInfo.textContent = 'Aggiungi la tua prima schedina per farla controllare al sistema.';
+      return;
+    }
+    mieSchedineList.innerHTML = tickets.map(renderMyTicketCard).join('');
+    if (mieSchedineInfo) mieSchedineInfo.textContent = `Schedine salvate nel tuo archivio privato: ${tickets.length}.`;
+    mieSchedineList.querySelectorAll('[data-delete-my-ticket]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const id = button.getAttribute('data-delete-my-ticket');
+        if (!id) return;
+        try {
+          await authFetchJson(`/api/mie-schedine/${id}`, { method: 'DELETE' });
+          await caricaMieSchedine();
+          if (mieSchedineFeedback) mieSchedineFeedback.textContent = 'Schedina eliminata.';
+        } catch (error) {
+          if (mieSchedineFeedback) mieSchedineFeedback.textContent = error.message;
+        }
+      });
+    });
+  } catch (error) {
+    mieSchedineList.innerHTML = `<div class="card"><strong>Errore:</strong> ${escapeHtml(error.message)}</div>`;
+    if (mieSchedineInfo) mieSchedineInfo.textContent = 'Errore nel caricamento del tuo archivio personale.';
+  }
+}
+
+function initMyTicketsPage() {
+  if (!mieSchedineForm) return;
+  renderMyTicketWheelPicker();
+  toggleMyTicketModeOptions();
+
+  myTicketModeSelect?.addEventListener('change', toggleMyTicketModeOptions);
+  resetMieSchedineForm?.addEventListener('click', () => {
+    mieSchedineForm.reset();
+    toggleMyTicketModeOptions();
+    renderMyTicketWheelPicker();
+    if (mieSchedineFeedback) mieSchedineFeedback.textContent = '';
+  });
+
+  mieSchedineForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const payload = collectMyTicketPayload();
+    if (!payload) return;
+    if (mieSchedineFeedback) mieSchedineFeedback.textContent = 'Salvataggio in corso...';
+    try {
+      await authFetchJson('/api/mie-schedine', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      mieSchedineForm.reset();
+      toggleMyTicketModeOptions();
+      renderMyTicketWheelPicker();
+      if (mieSchedineFeedback) mieSchedineFeedback.textContent = 'Schedina salvata correttamente.';
+      await caricaMieSchedine();
+    } catch (error) {
+      if (mieSchedineFeedback) mieSchedineFeedback.textContent = error.message;
+    }
+  });
+}
+
 function bootPageData() {
   caricaEstrazioni();
   caricaGiocateMetodi();
   caricaStatisticheMetodi();
   caricaSchedinePronte();
+  initMyTicketsPage();
+  caricaMieSchedine();
 }
 
 if (window.__authReady && typeof window.__authReady.finally === "function") {

@@ -15,6 +15,12 @@ import {
   updateUserStatus,
   verifyPassword
 } from "./auth-store.js";
+import {
+  createTicket as createUserTicket,
+  deleteTicket as deleteUserTicket,
+  initTicketsStore,
+  listTicketsByUser
+} from "./tickets-store.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -185,8 +191,6 @@ const MONTHS = {
   dicembre: 12
 };
 
-const OCA_FIXED_ABBINAMENTI = [1, 38, 45, 71, 85];
-const OCA_COLPI_MASSIMI = 5;
 
 const METHOD_META = {
   "Metodo Azzerati": {
@@ -252,12 +256,48 @@ const METHOD_META = {
     descrizione: "Lavora sulla coppia Venezia-Roma e propone ambi da capogiochi e vertibili.",
     focus: "Ambi"
   },
-  "Metodo dell'Oca": {
-    slug: "oca",
-    shortName: "Oca",
-    path: "/metodo-oca.html",
-    descrizione: "Versione automatizzata del Metodo dell'Oca: capogioco dalla somma dei 5 estratti e abbinamenti fissi per l'ambo.",
-    focus: "Ambata + ambi"
+};
+
+const RUOTE_TUTTE = ["Bari", "Cagliari", "Firenze", "Genova", "Milano", "Napoli", "Palermo", "Roma", "Torino", "Venezia"];
+const USER_TICKET_SIZES = { estratto: 1, ambo: 2, terno: 3, quaterna: 4, cinquina: 5 };
+const USER_TICKET_PREMI_PER_EURO = {
+  1: { estratto: 11.23 },
+  2: { estratto: 5.62, ambo: 250 },
+  3: { estratto: 3.74, ambo: 83.33, terno: 4500 },
+  4: { estratto: 2.81, ambo: 41.67, terno: 1125, quaterna: 120000 },
+  5: { estratto: 2.25, ambo: 25, terno: 450, quaterna: 24000, cinquina: 6000000 },
+  6: { estratto: 1.87, ambo: 16.67, terno: 225, quaterna: 8000, cinquina: 1000000 },
+  7: { estratto: 1.6, ambo: 11.9, terno: 128.57, quaterna: 3428.57, cinquina: 285714.29 },
+  8: { estratto: 1.4, ambo: 8.93, terno: 80.36, quaterna: 1714.29, cinquina: 107142.86 },
+  9: { estratto: 1.25, ambo: 6.34, terno: 53.57, quaterna: 952.38, cinquina: 47619.05 },
+  10: { estratto: 1.12, ambo: 5.56, terno: 37.5, quaterna: 571.43, cinquina: 23809.52 }
+};
+const USER_TICKET_NUMERO_ORO_RATES = {
+  2: { ambo: { withOro: 650, soloOro: 15 } },
+  3: { ambo: { withOro: 216.67, soloOro: 5 }, terno: { withOro: 10000, soloOro: 10 } },
+  4: { ambo: { withOro: 108.33, soloOro: 2.5 }, terno: { withOro: 2500, soloOro: 2.5 }, quaterna: { withOro: 250000, soloOro: 5 } },
+  5: { ambo: { withOro: 65, soloOro: 1.5 }, terno: { withOro: 1000, soloOro: 1 }, quaterna: { withOro: 50000, soloOro: 1 } },
+  6: { ambo: { withOro: 43.33, soloOro: 1 }, terno: { withOro: 500, soloOro: 0.5 }, quaterna: { withOro: 16666.67, soloOro: 0.33 } },
+  7: { ambo: { withOro: 30.95, soloOro: 0.71 }, terno: { withOro: 287.51, soloOro: 0.29 }, quaterna: { withOro: 7142.86, soloOro: 0.14 } },
+  8: { ambo: { withOro: 21.21, soloOro: 0.54 }, terno: { withOro: 178.57, soloOro: 0.18 }, quaterna: { withOro: 3571.43, soloOro: 0.07 } },
+  9: { ambo: { withOro: 18.06, soloOro: 0.42 }, terno: { withOro: 119.05, soloOro: 0.12 }, quaterna: { withOro: 1983.13, soloOro: 0.04 } },
+  10: { ambo: { withOro: 14.44, soloOro: 0.33 }, terno: { withOro: 83.33, soloOro: 0.08 }, quaterna: { withOro: 1190.48, soloOro: 0.02 } }
+};
+const USER_TICKET_LOTTO_PIU_CONFIG = {
+  "lotto-piu-3": {
+    label: "Lotto Più 3€",
+    expectedNumbers: 3,
+    payoutPerCombo: { ambo: 180, terno: 5540 }
+  },
+  "lotto-piu-4": {
+    label: "Lotto Più 4€",
+    expectedNumbers: 4,
+    payoutPerCombo: { ambo: 100, terno: 1800, quaterna: 216000 }
+  },
+  "lotto-piu-5": {
+    label: "Lotto Più 5€",
+    expectedNumbers: 5,
+    payoutPerCombo: { ambo: 66, terno: 1248, quaterna: 50596, cinquina: 4241160 }
   }
 };
 
@@ -1056,53 +1096,6 @@ function getPrevisioniVenere(estrazioni) {
   };
 }
 
-function getPrevisioniOca(estrazioni) {
-  const estrazione = estrazioni[0];
-  if (!estrazione) {
-    return {
-      metodo: "Metodo dell'Oca",
-      estrazioneRilevamento: null,
-      previsioni: []
-    };
-  }
-
-  const previsioni = RUOTE.map((ruota) => {
-    const cinquina = estrazione.ruote?.[ruota] || [];
-    const somma = cinquina.reduce((acc, numero) => acc + Number(numero || 0), 0);
-    const capogioco = fuori90(somma);
-    const abbinamenti = [...OCA_FIXED_ABBINAMENTI];
-    const ambi = abbinamenti
-      .map((abbinamento) => uniqueNumbers([capogioco, abbinamento]))
-      .filter((ambo) => ambo.length >= 2);
-
-    return {
-      ruota,
-      dataRilevamento: estrazione.data,
-      dataRilevamentoTesto: estrazione.dataTesto,
-      concorso: estrazione.concorso,
-      cinquina,
-      somma,
-      capogioco,
-      abbinamenti,
-      ambi,
-      colpiMassimi: OCA_COLPI_MASSIMI,
-      colpiPassati: 0,
-      colpiRimasti: OCA_COLPI_MASSIMI
-    };
-  });
-
-  return {
-    metodo: "Metodo dell'Oca",
-    estrazioneRilevamento: {
-      data: estrazione.data,
-      dataTesto: estrazione.dataTesto,
-      concorso: estrazione.concorso
-    },
-    previsioni
-  };
-}
-
-
 
 function getTipoGiocataLabel(size) {
   switch (size) {
@@ -1334,26 +1327,6 @@ function buildGiocateGroups(estrazioni) {
     });
   }
 
-  const oca = getPrevisioniOca(estrazioni);
-  if (oca?.previsioni?.length) {
-    groups.push({
-      nome: "Metodo dell'Oca",
-      items: oca.previsioni.map((item) => ({
-        titolo: item.ruota,
-        sottotitolo: `Concorso ${item.concorso}`,
-        descrizione: "Capogioco dalla somma della cinquina con abbinamenti fissi del metodo",
-        numeri: uniqueNumbers([item.capogioco, ...(item.abbinamenti || [])]),
-        ruote: [item.ruota],
-        giocate: [[item.capogioco], ...(item.ambi || [])],
-        dataSegnale: item.dataRilevamento,
-        dataSegnaleTesto: item.dataRilevamentoTesto,
-        concorso: item.concorso,
-        colpiMassimi: item.colpiMassimi,
-        colpiPassati: item.colpiPassati,
-        colpiRimasti: item.colpiRimasti
-      }))
-    });
-  }
 
   return groups.filter((group) => group.items?.length);
 }
@@ -2019,29 +1992,6 @@ function buildHistoricalMethodSignals(estrazioni) {
     });
   });
 
-  estrazioni.forEach((estrazione) => {
-    RUOTE.forEach((ruota) => {
-      const cinquina = estrazione.ruote?.[ruota] || [];
-      if (cinquina.length !== 5) return;
-      const somma = cinquina.reduce((acc, numero) => acc + Number(numero || 0), 0);
-      const capogioco = fuori90(somma);
-      const colpiPassati = countDrawsAfter(estrazioni, estrazione.data);
-      signals.push({
-        metodo: "Metodo dell'Oca",
-        titolo: ruota,
-        sottotitolo: `Concorso ${estrazione.concorso}`,
-        descrizione: "Capogioco dalla somma della cinquina con abbinamenti fissi del metodo",
-        numeri: uniqueNumbers([capogioco, ...OCA_FIXED_ABBINAMENTI]),
-        ruote: [ruota],
-        giocate: [[capogioco], ...OCA_FIXED_ABBINAMENTI.map((abbinamento) => uniqueNumbers([capogioco, abbinamento])).filter((ambo) => ambo.length >= 2)],
-        dataSegnale: estrazione.data,
-        dataSegnaleTesto: estrazione.dataTesto,
-        concorso: estrazione.concorso,
-        colpiMassimi: OCA_COLPI_MASSIMI,
-        colpiPassati
-      });
-    });
-  });
 
   return signals;
 }
@@ -2153,6 +2103,282 @@ function buildMethodStatsPayload(estrazioni) {
   };
 }
 
+function normalizeStoredWheel(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (!normalized) return null;
+  if (normalized === "tutte") return "Tutte";
+  return RUOTE.find((ruota) => ruota.toLowerCase() === normalized) || null;
+}
+
+function parseTicketDateInput(value = "") {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const match = raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
+  if (!match) return null;
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  let year = Number(match[3]);
+  if (year < 100) year += 2000;
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  return `${year.toString().padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function toDisplayDate(isoDate) {
+  if (!isoDate) return "";
+  const [year, month, day] = String(isoDate).split("-");
+  if (!year || !month || !day) return isoDate;
+  return `${day}/${month}/${year}`;
+}
+
+function cleanPlayedNumbers(numbers) {
+  if (!Array.isArray(numbers)) return [];
+  return [...new Set(numbers.map((value) => Number(value)).filter((value) => Number.isInteger(value) && value >= 1 && value <= 90))]
+    .sort((a, b) => a - b)
+    .slice(0, 10);
+}
+
+function sanitizeAmounts(amounts = {}) {
+  const entries = ["estratto", "ambo", "terno", "quaterna", "cinquina"];
+  return entries.reduce((acc, key) => {
+    const value = Number(amounts[key] || 0);
+    acc[key] = Number.isFinite(value) && value > 0 ? Number(value.toFixed(2)) : 0;
+    return acc;
+  }, {});
+}
+
+function sanitizeUserTicketInput(payload = {}) {
+  const date = parseTicketDateInput(payload.date || payload.drawDate || payload.data);
+  if (!date) throw new Error("Seleziona una data valida per la schedina.");
+
+  const mode = ["base", "lotto-piu-3", "lotto-piu-4", "lotto-piu-5"].includes(String(payload.mode || "base"))
+    ? String(payload.mode || "base")
+    : "base";
+  const numbers = cleanPlayedNumbers(payload.numbers || []);
+  if (!numbers.length) throw new Error("Inserisci da 1 a 10 numeri validi.");
+
+  const wheelsRaw = Array.isArray(payload.wheels) ? payload.wheels : [];
+  const wheels = [...new Set(wheelsRaw.map(normalizeStoredWheel).filter(Boolean))];
+  if (!wheels.length) throw new Error("Seleziona almeno una ruota.");
+  if (wheels.includes("Tutte") && wheels.length > 1) {
+    return {
+      date,
+      mode,
+      numbers,
+      wheels: ["Tutte"],
+      numberOro: Boolean(payload.numberOro),
+      amounts: sanitizeAmounts(payload.amounts),
+      note: String(payload.note || "").trim().slice(0, 120)
+    };
+  }
+
+  return {
+    date,
+    mode,
+    numbers,
+    wheels,
+    numberOro: Boolean(payload.numberOro),
+    amounts: sanitizeAmounts(payload.amounts),
+    note: String(payload.note || "").trim().slice(0, 120)
+  };
+}
+
+function nCr(n, r) {
+  if (!Number.isInteger(n) || !Number.isInteger(r) || r < 0 || n < 0 || r > n) return 0;
+  if (r === 0 || r === n) return 1;
+  let k = Math.min(r, n - r);
+  let result = 1;
+  for (let i = 1; i <= k; i++) {
+    result = (result * (n - k + i)) / i;
+  }
+  return Math.round(result);
+}
+
+function validateStoredTicketAgainstRules(ticket) {
+  const numbersCount = ticket.numbers.length;
+  if (ticket.mode === "base") {
+    const activeSorts = Object.entries(ticket.amounts || {}).filter(([, value]) => Number(value) > 0);
+    if (!activeSorts.length) throw new Error("Inserisci almeno un importo di giocata.");
+    if (!USER_TICKET_PREMI_PER_EURO[numbersCount]) throw new Error("Puoi verificare da 1 a 10 numeri giocati.");
+    if (ticket.numberOro) {
+      if ((ticket.amounts?.estratto || 0) > 0 || (ticket.amounts?.cinquina || 0) > 0) {
+        throw new Error("Con Numero Oro puoi usare solo ambo, terno e quaterna.");
+      }
+      if (!((ticket.amounts?.ambo || 0) > 0 || (ticket.amounts?.terno || 0) > 0 || (ticket.amounts?.quaterna || 0) > 0)) {
+        throw new Error("Attiva almeno una tra ambo, terno o quaterna per usare Numero Oro.");
+      }
+      if (numbersCount < 2) throw new Error("Per Numero Oro servono almeno 2 numeri giocati.");
+    }
+    return;
+  }
+
+  const config = USER_TICKET_LOTTO_PIU_CONFIG[ticket.mode];
+  if (!config) throw new Error("Modalità di gioco non valida.");
+  if (numbersCount !== config.expectedNumbers) {
+    throw new Error(`${config.label} richiede esattamente ${config.expectedNumbers} numeri giocati.`);
+  }
+}
+
+function getRuoteDaControllare(wheels = []) {
+  return wheels.includes("Tutte") ? RUOTE_TUTTE : wheels;
+}
+
+function computeStoredTicketBaseWinnings(ticket, estrazione) {
+  const numbersCount = ticket.numbers.length;
+  const rates = USER_TICKET_PREMI_PER_EURO[numbersCount];
+  const oroRates = USER_TICKET_NUMERO_ORO_RATES[numbersCount] || {};
+  const ruoteDaControllare = getRuoteDaControllare(ticket.wheels);
+  const factor = ticket.wheels.includes("Tutte") ? 0.1 : 1;
+  const detail = [];
+  let total = 0;
+
+  for (const ruota of ruoteDaControllare) {
+    const estratti = estrazione.ruote?.[ruota] || [];
+    const numeroOroRuota = estratti[4] ?? null;
+    const matched = ticket.numbers.filter((numero) => estratti.includes(numero));
+    const oroMatched = ticket.numberOro && numeroOroRuota != null && ticket.numbers.includes(numeroOroRuota);
+    const winnings = [];
+
+    for (const [sorte, importo] of Object.entries(ticket.amounts || {})) {
+      if (Number(importo) <= 0) continue;
+      const size = USER_TICKET_SIZES[sorte];
+      const baseRate = rates?.[sorte];
+      if (!size || !baseRate) continue;
+      const totalWinningCombos = sorte === "estratto" ? matched.length : nCr(matched.length, size);
+
+      if (!ticket.numberOro || !(sorte in oroRates)) {
+        if (totalWinningCombos > 0) {
+          const premio = Number((importo * baseRate * totalWinningCombos * factor).toFixed(2));
+          total += premio;
+          winnings.push({ tipo: "base", sorte, combinazioniVincenti: totalWinningCombos, premio });
+        }
+        continue;
+      }
+
+      const oroInfo = oroRates[sorte];
+      const combosWithOro = oroMatched && matched.length >= size ? nCr(matched.length - 1, size - 1) : 0;
+      const baseOnlyCombos = Math.max(0, totalWinningCombos - combosWithOro);
+
+      if (baseOnlyCombos > 0) {
+        const premio = Number((importo * baseRate * baseOnlyCombos * factor).toFixed(2));
+        total += premio;
+        winnings.push({ tipo: "base", sorte, combinazioniVincenti: baseOnlyCombos, premio });
+      }
+
+      if (combosWithOro > 0) {
+        const premio = Number((importo * oroInfo.withOro * combosWithOro * factor).toFixed(2));
+        total += premio;
+        winnings.push({ tipo: "numero-oro", sorte, combinazioniVincenti: combosWithOro, premio });
+      } else if (oroMatched) {
+        const premio = Number((importo * oroInfo.soloOro * factor).toFixed(2));
+        total += premio;
+        winnings.push({ tipo: "solo-oro", sorte, combinazioniVincenti: 1, premio });
+      }
+    }
+
+    detail.push({ ruota, estratti, numeroOroRuota, matched, winnings });
+  }
+
+  return { total: Number(total.toFixed(2)), detail };
+}
+
+function computeStoredTicketLottoPiuWinnings(ticket, estrazione) {
+  const config = USER_TICKET_LOTTO_PIU_CONFIG[ticket.mode];
+  const ruoteDaControllare = getRuoteDaControllare(ticket.wheels);
+  const factor = ticket.wheels.includes("Tutte") ? 0.1 : 1;
+  const detail = [];
+  let total = 0;
+
+  for (const ruota of ruoteDaControllare) {
+    const estratti = estrazione.ruote?.[ruota] || [];
+    const matched = ticket.numbers.filter((numero) => estratti.includes(numero));
+    const winnings = [];
+
+    for (const [sorte, payoutPerCombo] of Object.entries(config.payoutPerCombo)) {
+      const size = USER_TICKET_SIZES[sorte];
+      const combinazioniVincenti = nCr(matched.length, size);
+      if (!combinazioniVincenti) continue;
+      const premio = Number((payoutPerCombo * combinazioniVincenti * factor).toFixed(2));
+      total += premio;
+      winnings.push({ tipo: "lotto-piu", sorte, combinazioniVincenti, premio });
+    }
+
+    detail.push({ ruota, estratti, numeroOroRuota: estratti[4] ?? null, matched, winnings });
+  }
+
+  return { total: Number(total.toFixed(2)), detail };
+}
+
+function summarizeStoredTicketResult(ticket, estrazione, result) {
+  const winningLines = result.detail.flatMap((item) =>
+    item.winnings.map((w) => {
+      const tipoLabel = w.tipo === "base" ? "Lotto base" : w.tipo === "numero-oro" ? "Numero Oro" : w.tipo === "solo-oro" ? "Solo Numero Oro" : "Lotto Più";
+      return `${item.ruota}: ${w.sorte} (${tipoLabel}) x${w.combinazioniVincenti}`;
+    })
+  );
+
+  return {
+    status: result.total > 0 ? "vincente" : "perdente",
+    label: result.total > 0 ? "Schedina vincente" : "Schedina perdente",
+    total: result.total,
+    drawDate: estrazione.data,
+    drawDateLabel: estrazione.dataTesto,
+    concorso: estrazione.concorso,
+    summary: winningLines.length ? winningLines.join(" · ") : "Nessuna combinazione vincente trovata.",
+    detail: result.detail
+  };
+}
+
+function evaluateStoredTicket(ticket, estrazioni = []) {
+  const estrazione = estrazioni.find((item) => item.data === ticket.date);
+  if (!estrazione) {
+    return {
+      status: "non-disponibile",
+      label: "Estrazione non disponibile",
+      total: 0,
+      drawDate: ticket.date,
+      drawDateLabel: toDisplayDate(ticket.date),
+      concorso: null,
+      summary: "Non ho trovato questa estrazione nell'archivio caricato dal sito.",
+      detail: []
+    };
+  }
+
+  const result = ticket.mode === "base"
+    ? computeStoredTicketBaseWinnings(ticket, estrazione)
+    : computeStoredTicketLottoPiuWinnings(ticket, estrazione);
+
+  return summarizeStoredTicketResult(ticket, estrazione, result);
+}
+
+function enrichStoredTicket(ticket, estrazioni = []) {
+  const evaluation = evaluateStoredTicket(ticket, estrazioni);
+  const modeLabel = ticket.mode === "base" ? (ticket.numberOro ? "Lotto base + Numero Oro" : "Lotto base") : (USER_TICKET_LOTTO_PIU_CONFIG[ticket.mode]?.label || ticket.mode);
+  return {
+    ...ticket,
+    displayDate: toDisplayDate(ticket.date),
+    modeLabel,
+    numbersLabel: ticket.numbers.map(formatNumeroLabel).join(" - "),
+    wheelsLabel: ticket.wheels.join(", "),
+    evaluation
+  };
+}
+
+async function buildUserTicketsPayload(userId, estrazioni) {
+  const tickets = await listTicketsByUser(userId);
+  const enriched = tickets.map((ticket) => enrichStoredTicket(ticket, estrazioni));
+  return {
+    total: enriched.length,
+    tickets: enriched
+  };
+}
+
+function parseTicketRequestBody(body = {}) {
+  const ticket = sanitizeUserTicketInput(body);
+  validateStoredTicketAgainstRules(ticket);
+  return ticket;
+}
+
 function parseCookies(cookieHeader = "") {
   return cookieHeader
     .split(";")
@@ -2258,6 +2484,7 @@ function requireAdminApi(req, res, next) {
 const protectedStaticPages = [
   "/giocate.html",
   "/schedine-pronte.html",
+  "/mie-schedine.html",
   "/metodi.html",
   "/verifica-schedina.html",
   "/fai-3-fai-4.html",
@@ -2269,7 +2496,6 @@ const protectedStaticPages = [
   "/metodo-isotopi.html",
   "/metodo-monco.html",
   "/metodo-ninja.html",
-  "/metodo-oca.html",
   "/metodo-venere.html"
 ];
 
@@ -2442,6 +2668,44 @@ app.get("/api/schedine-pronte", requireApprovedApi, async (req, res) => {
   }
 });
 
+app.get("/api/mie-schedine", requireApprovedApi, async (req, res) => {
+  try {
+    const estrazioni = await getAllEstrazioni();
+    const payload = await buildUserTicketsPayload(req.authUser.id, estrazioni);
+    res.json(payload);
+  } catch (error) {
+    console.error("Errore /api/mie-schedine:", error);
+    res.status(500).json({ errore: "Impossibile leggere le tue schedine", dettaglio: error.message });
+  }
+});
+
+app.post("/api/mie-schedine", requireApprovedApi, async (req, res) => {
+  try {
+    const ticketPayload = parseTicketRequestBody(req.body || {});
+    const saved = await createUserTicket(req.authUser.id, ticketPayload);
+    const estrazioni = await getAllEstrazioni();
+    res.status(201).json({
+      messaggio: "Schedina salvata correttamente.",
+      ticket: enrichStoredTicket(saved, estrazioni)
+    });
+  } catch (error) {
+    const status = /valida|Seleziona|Inserisci|Numero Oro|Lotto Più|richiede/i.test(error.message || "") ? 400 : 500;
+    res.status(status).json({ errore: error.message || "Impossibile salvare la schedina" });
+  }
+});
+
+app.delete("/api/mie-schedine/:id", requireApprovedApi, async (req, res) => {
+  try {
+    const deleted = await deleteUserTicket(req.authUser.id, req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ errore: "Schedina non trovata" });
+    }
+    res.json({ messaggio: "Schedina eliminata." });
+  } catch (error) {
+    res.status(500).json({ errore: "Impossibile eliminare la schedina" });
+  }
+});
+
 app.get("/api/metodi-stats", async (req, res) => {
   try {
     const estrazioni = await getAllEstrazioni();
@@ -2567,15 +2831,6 @@ app.get("/api/metodo-doppio-30", requireApprovedApi, async (req, res) => {
   }
 });
 
-app.get("/api/metodo-oca", requireApprovedApi, async (req, res) => {
-  try {
-    const estrazioni = await getAllEstrazioni();
-    res.json(getPrevisioniOca(estrazioni));
-  } catch (error) {
-    console.error("Errore metodo dell'oca:", error);
-    res.status(500).json({ errore: "Impossibile calcolare il Metodo dell'Oca", dettaglio: error.message });
-  }
-});
 
 app.get("/api/metodo-venere", requireApprovedApi, async (req, res) => {
   try {
@@ -2590,6 +2845,7 @@ app.get("/api/metodo-venere", requireApprovedApi, async (req, res) => {
 (async () => {
   try {
     await initAuthStore();
+    await initTicketsStore();
     const adminUser = await ensureBootstrapAdmin();
     console.log(`Account admin pronto: ${adminUser.username}`);
     app.listen(PORT, HOST, () => {
