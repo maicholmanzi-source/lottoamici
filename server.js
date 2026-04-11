@@ -2309,6 +2309,72 @@ function computeStoredTicketLottoPiuWinnings(ticket, estrazione) {
   return { total: Number(total.toFixed(2)), detail };
 }
 
+function buildPotentialTicketResult(ticket) {
+  const simulated = buildPotentialDrawForTicket(ticket);
+  if (!simulated) {
+    return {
+      label: "Premio potenziale non disponibile",
+      summary: "Non ho abbastanza dati per stimare il premio di questa schedina.",
+      total: 0,
+      detail: []
+    };
+  }
+
+  const result = ticket.mode === "base"
+    ? computeStoredTicketBaseWinnings(ticket, simulated)
+    : computeStoredTicketLottoPiuWinnings(ticket, simulated);
+
+  const detail = result.detail.filter((item) => Array.isArray(item.winnings) && item.winnings.length > 0);
+  const bestWinning = detail
+    .flatMap((item) => item.winnings.map((winning) => ({ ruota: item.ruota, ...winning })))
+    .sort((a, b) => b.premio - a.premio)[0];
+  const perRuotaTotal = detail.length
+    ? detail.reduce((max, item) => Math.max(max, item.winnings.reduce((sum, winning) => sum + Number(winning.premio || 0), 0)), 0)
+    : 0;
+
+  const summary = bestWinning
+    ? `Stima massima per ruota: ${bestWinning.ruota} · ${bestWinning.sorte} · fino a ${formatEuro(perRuotaTotal)}`
+    : "Nessun premio potenziale calcolabile con la configurazione attuale.";
+
+  return {
+    label: "Vincita stimata",
+    summary,
+    total: Number(perRuotaTotal.toFixed(2)),
+    detail
+  };
+}
+
+function buildPotentialDrawForTicket(ticket) {
+  const ruoteDaControllare = getRuoteDaControllare(ticket.wheels);
+  if (!ruoteDaControllare.length || !Array.isArray(ticket.numbers) || !ticket.numbers.length) return null;
+
+  const matchedTarget = ticket.mode === "base"
+    ? Math.min(ticket.numbers.length, 5)
+    : Math.min(USER_TICKET_LOTTO_PIU_CONFIG[ticket.mode]?.expectedNumbers || ticket.numbers.length, 5);
+
+  const matched = ticket.numbers.slice(0, matchedTarget);
+  const filler = [1,2,3,4,5,6,7,8,10,11,13,14,15,16,17,18,19,20,21,22,23].filter((n) => !ticket.numbers.includes(n));
+  const baseEstratti = [...matched];
+  while (baseEstratti.length < 5) baseEstratti.push(filler.shift() || 1);
+
+  if (ticket.mode === "base" && ticket.numberOro && matched.length >= 2) {
+    const oroCandidate = matched[matched.length - 1];
+    const idx = baseEstratti.indexOf(oroCandidate);
+    if (idx !== -1) {
+      baseEstratti.splice(idx, 1);
+      baseEstratti[4] = oroCandidate;
+    }
+  }
+
+  const ruote = Object.fromEntries(ruoteDaControllare.map((ruota) => [ruota, [...baseEstratti]]));
+  return {
+    data: ticket.date,
+    dataTesto: toDisplayDate(ticket.date),
+    concorso: "stima",
+    ruote
+  };
+}
+
 function summarizeStoredTicketResult(ticket, estrazione, result) {
   const winningLines = result.detail.flatMap((item) =>
     item.winnings.map((w) => {
@@ -2353,6 +2419,7 @@ function evaluateStoredTicket(ticket, estrazioni = []) {
 
 function enrichStoredTicket(ticket, estrazioni = []) {
   const evaluation = evaluateStoredTicket(ticket, estrazioni);
+  const potential = buildPotentialTicketResult(ticket);
   const modeLabel = ticket.mode === "base" ? (ticket.numberOro ? "Lotto base + Numero Oro" : "Lotto base") : (USER_TICKET_LOTTO_PIU_CONFIG[ticket.mode]?.label || ticket.mode);
   return {
     ...ticket,
@@ -2360,15 +2427,21 @@ function enrichStoredTicket(ticket, estrazioni = []) {
     modeLabel,
     numbersLabel: ticket.numbers.map(formatNumeroLabel).join(" - "),
     wheelsLabel: ticket.wheels.join(", "),
-    evaluation
+    evaluation,
+    potential
   };
 }
 
 async function buildUserTicketsPayload(userId, estrazioni) {
   const tickets = await listTicketsByUser(userId);
   const enriched = tickets.map((ticket) => enrichStoredTicket(ticket, estrazioni));
+  const maxTickets = 10;
+  const remainingSlots = Math.max(0, maxTickets - enriched.length);
   return {
     total: enriched.length,
+    maxTickets,
+    remainingSlots,
+    limitReached: enriched.length >= maxTickets,
     tickets: enriched
   };
 }
@@ -2681,6 +2754,12 @@ app.get("/api/mie-schedine", requireApprovedApi, async (req, res) => {
 
 app.post("/api/mie-schedine", requireApprovedApi, async (req, res) => {
   try {
+    const currentCount = await countTicketsByUser(req.authUser.id);
+    const maxTickets = 10;
+    if (currentCount >= maxTickets) {
+      return res.status(400).json({ errore: `Hai raggiunto il limite massimo di ${maxTickets} schedine personali. Elimina una schedina prima di salvarne un'altra.` });
+    }
+
     const ticketPayload = parseTicketRequestBody(req.body || {});
     const saved = await createUserTicket(req.authUser.id, ticketPayload);
     const estrazioni = await getAllEstrazioni();
@@ -2689,7 +2768,7 @@ app.post("/api/mie-schedine", requireApprovedApi, async (req, res) => {
       ticket: enrichStoredTicket(saved, estrazioni)
     });
   } catch (error) {
-    const status = /valida|Seleziona|Inserisci|Numero Oro|Lotto Più|richiede/i.test(error.message || "") ? 400 : 500;
+    const status = /valida|Seleziona|Inserisci|Numero Oro|Lotto Più|richiede|limite massimo/i.test(error.message || "") ? 400 : 500;
     res.status(status).json({ errore: error.message || "Impossibile salvare la schedina" });
   }
 });

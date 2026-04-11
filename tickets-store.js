@@ -30,6 +30,15 @@ export async function listTicketsByUser(userId) {
   return result.rows.map(mapRowToTicket);
 }
 
+export async function countTicketsByUser(userId) {
+  await initDatabase();
+  const result = await query(
+    `SELECT COUNT(*)::int AS total FROM user_tickets WHERE user_id = $1`,
+    [userId]
+  );
+  return Number(result.rows[0]?.total || 0);
+}
+
 export async function createTicket(userId, payload) {
   await initDatabase();
   const id = crypto.randomUUID();

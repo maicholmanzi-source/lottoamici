@@ -931,6 +931,39 @@ function collectMyTicketPayload() {
   return payload;
 }
 
+
+function setMyTicketsFormLimitState(data = {}) {
+  const limitReached = Boolean(data.limitReached);
+  const total = Number(data.total || 0);
+  const maxTickets = Number(data.maxTickets || 10);
+  const remainingSlots = Math.max(0, Number(data.remainingSlots ?? (maxTickets - total)));
+
+  if (mieSchedineInfo) {
+    mieSchedineInfo.textContent = limitReached
+      ? `Hai raggiunto il limite massimo di ${maxTickets} schedine personali. Usa il pulsante con il visto per rimuoverne una.`
+      : `Schedine salvate nel tuo archivio privato: ${total}/${maxTickets}. Spazi liberi: ${remainingSlots}.`;
+  }
+
+  if (!mieSchedineForm) return;
+  const submitButton = mieSchedineForm.querySelector('button[type="submit"]');
+  if (submitButton) submitButton.disabled = limitReached;
+  mieSchedineForm.querySelectorAll('input, select').forEach((field) => {
+    field.disabled = limitReached;
+  });
+  const resetButton = document.getElementById('resetMieSchedineForm');
+  if (resetButton) resetButton.disabled = false;
+}
+
+function renderPotentialWinningsBox(potential = {}) {
+  return `
+    <div class="my-ticket-potential-box">
+      <span>${escapeHtml(potential.label || 'Vincita stimata')}</span>
+      <strong>${formatEuro(potential.total || 0)}</strong>
+      <small>${escapeHtml(potential.summary || 'Stima calcolata in base alla configurazione della schedina.')}</small>
+    </div>
+  `;
+}
+
 function renderMyTicketWinnings(detail = []) {
   const lines = detail.flatMap((item) => (item.winnings || []).map((winning) => {
     const label = winning.tipo === 'base'
@@ -962,18 +995,21 @@ function renderMyTicketCard(ticket) {
           <p class="muted"><strong>Numeri:</strong> ${escapeHtml(ticket.numbersLabel || '')}</p>
           <p class="muted"><strong>Ruote:</strong> ${escapeHtml(ticket.wheelsLabel || '')}</p>
         </div>
+        <div class="my-ticket-side-stack">
         <div class="my-ticket-result-box ${statusTone}">
           <span>${escapeHtml(evaluation.label || 'Esito')}</span>
           <strong>${formatEuro(evaluation.total || 0)}</strong>
           <small>${escapeHtml(evaluation.drawDateLabel || ticket.displayDate || '')}</small>
         </div>
+        ${renderPotentialWinningsBox(ticket.potential || {})}
+      </div>
       </div>
       <p>${escapeHtml(evaluation.summary || 'Esito non disponibile.')}</p>
       <div class="card subtle-card compact-form-card">
         ${renderMyTicketWinnings(evaluation.detail || [])}
       </div>
       <div class="ticket-footer-row">
-        <button type="button" class="danger-button" data-delete-my-ticket="${ticket.id}">Elimina</button>
+        <button type="button" class="danger-button" data-delete-my-ticket="${ticket.id}">✓ Vista e rimuovi</button>
       </div>
     </article>
   `;
@@ -985,13 +1021,13 @@ async function caricaMieSchedine() {
   try {
     const data = await authFetchJson('/api/mie-schedine');
     const tickets = data.tickets || [];
+    setMyTicketsFormLimitState(data);
     if (!tickets.length) {
       mieSchedineList.innerHTML = '<div class="card">Non hai ancora salvato schedine personali.</div>';
-      if (mieSchedineInfo) mieSchedineInfo.textContent = 'Aggiungi la tua prima schedina per farla controllare al sistema.';
+      if (mieSchedineInfo) mieSchedineInfo.textContent = `Archivio personale vuoto. Puoi salvare fino a ${data.maxTickets || 10} schedine.`;
       return;
     }
     mieSchedineList.innerHTML = tickets.map(renderMyTicketCard).join('');
-    if (mieSchedineInfo) mieSchedineInfo.textContent = `Schedine salvate nel tuo archivio privato: ${tickets.length}.`;
     mieSchedineList.querySelectorAll('[data-delete-my-ticket]').forEach((button) => {
       button.addEventListener('click', async () => {
         const id = button.getAttribute('data-delete-my-ticket');

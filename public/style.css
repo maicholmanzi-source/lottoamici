@@ -1850,3 +1850,34 @@ body.home-page .section-title-row .muted {
     width: 100%;
   }
 }
+
+
+.my-ticket-side-stack {
+  display: grid;
+  gap: 10px;
+  min-width: 220px;
+}
+
+.my-ticket-potential-box {
+  min-width: 190px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: #fffdf1;
+  border: 1px solid #facc15;
+  display: grid;
+  gap: 4px;
+}
+
+.my-ticket-potential-box span {
+  color: #7c5b00;
+  font-weight: 700;
+}
+
+.my-ticket-potential-box strong {
+  font-size: 1.25rem;
+  color: #7c2d12;
+}
+
+.my-ticket-potential-box small {
+  color: #6b5a1e;
+}
