@@ -33,6 +33,16 @@ app.use(express.urlencoded({ extended: true }));
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+function formatEuro(value) {
+  const amount = Number(value || 0);
+  return amount.toLocaleString("it-IT", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
 const RUOTE = [
   "Bari",
   "Cagliari",
@@ -2418,16 +2428,86 @@ function evaluateStoredTicket(ticket, estrazioni = []) {
   return summarizeStoredTicketResult(ticket, estrazione, result);
 }
 
-function enrichStoredTicket(ticket, estrazioni = []) {
-  const evaluation = evaluateStoredTicket(ticket, estrazioni);
-  const potential = buildPotentialTicketResult(ticket);
-  const modeLabel = ticket.mode === "base" ? (ticket.numberOro ? "Lotto base + Numero Oro" : "Lotto base") : (USER_TICKET_LOTTO_PIU_CONFIG[ticket.mode]?.label || ticket.mode);
-  return {
+function normalizeLegacyStoredTicket(ticket = {}) {
+  const normalizedDate = parseTicketDateInput(ticket.date || ticket.drawDate || ticket.data || ticket.createdAt || ticket.created_at || "");
+  const normalizedNumbers = cleanPlayedNumbers(ticket.numbers || ticket.numeri || []);
+  const rawWheels = Array.isArray(ticket.wheels)
+    ? ticket.wheels
+    : Array.isArray(ticket.ruote)
+      ? ticket.ruote
+      : String(ticket.wheels || ticket.ruote || "")
+          .split(/[;,]/)
+          .map((item) => item.trim())
+          .filter(Boolean);
+  const normalizedWheels = [...new Set(rawWheels.map(normalizeStoredWheel).filter(Boolean))];
+
+  let normalizedMode = String(ticket.mode || '').trim();
+  if (!normalizedMode) normalizedMode = 'base';
+  if (normalizedMode === 'lotto-piu' || normalizedMode === 'lotto_piu') {
+    if (normalizedNumbers.length === 3) normalizedMode = 'lotto-piu-3';
+    else if (normalizedNumbers.length === 4) normalizedMode = 'lotto-piu-4';
+    else if (normalizedNumbers.length === 5) normalizedMode = 'lotto-piu-5';
+    else normalizedMode = 'base';
+  }
+  if (!["base", "lotto-piu-3", "lotto-piu-4", "lotto-piu-5"].includes(normalizedMode)) {
+    normalizedMode = 'base';
+  }
+
+  const normalized = {
     ...ticket,
-    displayDate: toDisplayDate(ticket.date),
+    date: normalizedDate || '',
+    mode: normalizedMode,
+    numbers: normalizedNumbers,
+    wheels: normalizedWheels,
+    numberOro: Boolean(ticket.numberOro || ticket.numeroOro),
+    amounts: sanitizeAmounts(ticket.amounts || ticket.importi || {}),
+    note: String(ticket.note || ticket.notes || ticket.nome || '').trim().slice(0, 120)
+  };
+
+  normalized.isValidStoredTicket = Boolean(normalized.date && normalized.numbers.length && normalized.wheels.length);
+  if (!normalized.isValidStoredTicket) {
+    normalized.invalidReason = 'Formato schedina legacy non compatibile';
+  }
+  return normalized;
+}
+
+function enrichStoredTicket(ticket, estrazioni = []) {
+  const normalizedTicket = normalizeLegacyStoredTicket(ticket);
+  if (!normalizedTicket.isValidStoredTicket) {
+    return {
+      ...normalizedTicket,
+      displayDate: normalizedTicket.date ? toDisplayDate(normalizedTicket.date) : 'Data non disponibile',
+      modeLabel: normalizedTicket.mode === 'base' ? 'Lotto base' : (USER_TICKET_LOTTO_PIU_CONFIG[normalizedTicket.mode]?.label || normalizedTicket.mode),
+      numbersLabel: Array.isArray(normalizedTicket.numbers) && normalizedTicket.numbers.length ? normalizedTicket.numbers.map(formatNumeroLabel).join(' - ') : 'Numeri non leggibili',
+      wheelsLabel: Array.isArray(normalizedTicket.wheels) && normalizedTicket.wheels.length ? normalizedTicket.wheels.join(', ') : 'Ruote non leggibili',
+      evaluation: {
+        status: 'non-disponibile',
+        label: 'Schedina da aggiornare',
+        total: 0,
+        drawDate: normalizedTicket.date || '',
+        drawDateLabel: normalizedTicket.date ? toDisplayDate(normalizedTicket.date) : 'Data non disponibile',
+        concorso: null,
+        summary: 'Questa schedina è salvata in un formato vecchio o incompleto. Aprila e salvala di nuovo.',
+        detail: []
+      },
+      potential: {
+        label: 'Vincita stimata',
+        summary: 'Stima non disponibile finché la schedina non viene aggiornata.',
+        total: 0,
+        detail: []
+      }
+    };
+  }
+
+  const evaluation = evaluateStoredTicket(normalizedTicket, estrazioni);
+  const potential = buildPotentialTicketResult(normalizedTicket);
+  const modeLabel = normalizedTicket.mode === "base" ? (normalizedTicket.numberOro ? "Lotto base + Numero Oro" : "Lotto base") : (USER_TICKET_LOTTO_PIU_CONFIG[normalizedTicket.mode]?.label || normalizedTicket.mode);
+  return {
+    ...normalizedTicket,
+    displayDate: toDisplayDate(normalizedTicket.date),
     modeLabel,
-    numbersLabel: ticket.numbers.map(formatNumeroLabel).join(" - "),
-    wheelsLabel: ticket.wheels.join(", "),
+    numbersLabel: normalizedTicket.numbers.map(formatNumeroLabel).join(" - "),
+    wheelsLabel: normalizedTicket.wheels.join(", "),
     evaluation,
     potential
   };
@@ -2435,7 +2515,17 @@ function enrichStoredTicket(ticket, estrazioni = []) {
 
 async function buildUserTicketsPayload(userId, estrazioni) {
   const tickets = await listTicketsByUser(userId);
-  const enriched = tickets.map((ticket) => enrichStoredTicket(ticket, estrazioni));
+  const enriched = [];
+  const skipped = [];
+
+  for (const ticket of tickets) {
+    try {
+      enriched.push(enrichStoredTicket(ticket, estrazioni));
+    } catch (error) {
+      skipped.push({ id: ticket?.id || null, reason: error?.message || 'Errore sconosciuto' });
+    }
+  }
+
   const maxTickets = 10;
   const remainingSlots = Math.max(0, maxTickets - enriched.length);
   return {
@@ -2443,6 +2533,7 @@ async function buildUserTicketsPayload(userId, estrazioni) {
     maxTickets,
     remainingSlots,
     limitReached: enriched.length >= maxTickets,
+    skippedTickets: skipped.length,
     tickets: enriched
   };
 }

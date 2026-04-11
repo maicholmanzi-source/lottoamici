@@ -2,7 +2,14 @@ import crypto from 'crypto';
 import { initDatabase, query } from './db.js';
 
 function mapRowToTicket(row) {
-  const payload = row.payload || {};
+  let payload = row.payload || {};
+  if (typeof payload === 'string') {
+    try {
+      payload = JSON.parse(payload);
+    } catch {
+      payload = { legacyRawPayload: payload };
+    }
+  }
   return {
     id: row.id,
     userId: String(row.user_id),
