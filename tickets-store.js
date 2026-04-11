@@ -22,7 +22,7 @@ export async function listTicketsByUser(userId) {
     `
       SELECT id, user_id, payload, created_at, updated_at
       FROM user_tickets
-      WHERE user_id = $1
+      WHERE user_id::text = $1::text
       ORDER BY created_at DESC
     `,
     [userId]
@@ -33,7 +33,7 @@ export async function listTicketsByUser(userId) {
 export async function countTicketsByUser(userId) {
   await initDatabase();
   const result = await query(
-    `SELECT COUNT(*)::int AS total FROM user_tickets WHERE user_id = $1`,
+    `SELECT COUNT(*)::int AS total FROM user_tickets WHERE user_id::text = $1::text`,
     [userId]
   );
   return Number(result.rows[0]?.total || 0);
@@ -56,7 +56,7 @@ export async function createTicket(userId, payload) {
 export async function deleteTicket(userId, ticketId) {
   await initDatabase();
   const result = await query(
-    `DELETE FROM user_tickets WHERE user_id = $1 AND id = $2`,
+    `DELETE FROM user_tickets WHERE user_id::text = $1::text AND id = $2`,
     [userId, ticketId]
   );
   return result.rowCount > 0;

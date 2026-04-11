@@ -16,6 +16,7 @@ import {
   verifyPassword
 } from "./auth-store.js";
 import {
+  countTicketsByUser,
   createTicket as createUserTicket,
   deleteTicket as deleteUserTicket,
   initTicketsStore,
