@@ -1,6 +1,8 @@
 import crypto from 'crypto';
 import { initDatabase, query, withTransaction } from './db.js';
 
+export const USER_ROLES = ['user', 'moderatore', 'admin', 'admin_senior'];
+
 function normalizeUsername(username = '') {
   return String(username).trim().toLowerCase();
 }
@@ -44,7 +46,7 @@ export async function ensureBootstrapAdmin() {
   const normalized = normalizeUsername(adminUsername);
 
   const existingRes = await query(
-    `SELECT * FROM users WHERE username_lower = $1 AND role = 'admin' LIMIT 1`,
+    `SELECT * FROM users WHERE username_lower = $1 LIMIT 1`,
     [normalized]
   );
 
@@ -63,12 +65,26 @@ export async function ensureBootstrapAdmin() {
           status,
           approved_at
         )
-        VALUES ($1, $2, $3, $4, 'admin', 'approved', NOW())
+        VALUES ($1, $2, $3, $4, 'admin_senior', 'approved', NOW())
         RETURNING *
       `,
       [adminUsername, normalized, salt, hash]
     );
     existing = inserted.rows[0];
+  } else if (existing.role !== 'admin_senior' || existing.status !== 'approved') {
+    const updated = await query(
+      `
+        UPDATE users
+        SET role = 'admin_senior',
+            status = 'approved',
+            approved_at = COALESCE(approved_at, NOW()),
+            rejected_at = NULL
+        WHERE id = $1
+        RETURNING *
+      `,
+      [existing.id]
+    );
+    existing = updated.rows[0] || existing;
   }
 
   return publicUser(existing);
@@ -154,6 +170,28 @@ export async function updateUserStatus(userId, status) {
       RETURNING *
     `,
     [userId, status, approvedAt, rejectedAt]
+  );
+
+  return publicUser(result.rows[0] || null);
+}
+
+export async function updateUserRole(userId, role) {
+  await initDatabase();
+  if (!USER_ROLES.includes(role)) {
+    throw new Error('Ruolo non valido');
+  }
+
+  const result = await query(
+    `
+      UPDATE users
+      SET role = $2,
+          approved_at = CASE WHEN $2 IN ('moderatore', 'admin', 'admin_senior') THEN COALESCE(approved_at, NOW()) ELSE approved_at END,
+          status = CASE WHEN $2 IN ('moderatore', 'admin', 'admin_senior') THEN 'approved' ELSE status END,
+          rejected_at = CASE WHEN $2 IN ('moderatore', 'admin', 'admin_senior') THEN NULL ELSE rejected_at END
+      WHERE id = $1
+      RETURNING *
+    `,
+    [userId, role]
   );
 
   return publicUser(result.rows[0] || null);

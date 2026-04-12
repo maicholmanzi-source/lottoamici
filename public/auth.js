@@ -30,11 +30,28 @@ function escapeHtml(value = '') {
     .replace(/'/g, '&#039;');
 }
 
+const ROLE_LABELS = {
+  user: 'User',
+  moderatore: 'Moderatore',
+  admin: 'Admin',
+  admin_senior: 'Admin senior'
+};
+
+const ASSIGNABLE_ROLES = ['user', 'moderatore', 'admin', 'admin_senior'];
+
+function formatRole(role = 'user') {
+  return ROLE_LABELS[role] || role;
+}
+
 function getAuthState() {
   return window.__authState || {
     isAuthenticated: false,
     canAccessProtected: false,
+    isModerator: false,
     isAdmin: false,
+    isSeniorAdmin: false,
+    canManageUsers: false,
+    canManageRoles: false,
     user: null
   };
 }
@@ -44,6 +61,13 @@ function formatUserStatus(status) {
   if (status === 'pending') return 'in attesa';
   if (status === 'rejected') return 'rifiutato';
   return status || 'ospite';
+}
+
+function roleOptionsMarkup(selectedRole) {
+  return ASSIGNABLE_ROLES.map((role) => {
+    const selected = role === selectedRole ? ' selected' : '';
+    return `<option value="${role}"${selected}>${escapeHtml(formatRole(role))}</option>`;
+  }).join('');
 }
 
 function renderAuthNav() {
@@ -76,10 +100,11 @@ function renderAuthNav() {
       return;
     }
 
-    const adminLink = state.isAdmin ? '<a href="/admin.html">Admin</a>' : '';
+    const adminLink = state.canManageUsers ? '<a href="/admin.html">Admin</a>' : '';
     const statusLabel = formatUserStatus(state.user?.status);
+    const roleLabel = formatRole(state.user?.role);
     slot.innerHTML = `
-      <span class="nav-user-chip">${escapeHtml(state.user?.username || 'Utente')} · ${escapeHtml(statusLabel)}</span>
+      <span class="nav-user-chip">${escapeHtml(state.user?.username || 'Utente')} · ${escapeHtml(roleLabel)} · ${escapeHtml(statusLabel)}</span>
       ${adminLink}
       <button type="button" class="nav-logout-button" id="navLogoutButton">Esci</button>
     `;
@@ -202,26 +227,43 @@ function initWaitingPage() {
   if (!target || !state.isAuthenticated) return;
   target.innerHTML = `
     <p><strong>Utente:</strong> ${escapeHtml(state.user?.username || '')}</p>
+    <p><strong>Ruolo:</strong> ${escapeHtml(formatRole(state.user?.role || 'user'))}</p>
     <p><strong>Stato account:</strong> ${escapeHtml(formatUserStatus(state.user?.status))}</p>
-    <p class="muted">Quando l'admin approva il tuo account, potrai entrare nelle pagine metodi, giocate e verifica schedina.</p>
+    <p class="muted">Quando lo staff approva il tuo account, potrai entrare nelle pagine metodi, giocate e verifica schedina.</p>
   `;
 }
 
-function adminRow(user) {
+function adminRow(user, currentState) {
   const statusClass = user.status === 'approved' ? 'status-approved' : user.status === 'pending' ? 'status-pending' : 'status-rejected';
+  const canManageRoles = Boolean(currentState?.canManageRoles);
+  const isSelf = Number(currentState?.user?.id) === Number(user.id);
+  const statusControls = user.role === 'admin_senior'
+    ? '<span class="muted">Admin senior</span>'
+    : `
+      <button type="button" data-admin-action="approved" data-user-id="${user.id}">Approva</button>
+      <button type="button" class="secondary-button" data-admin-action="pending" data-user-id="${user.id}">Rimetti in attesa</button>
+      <button type="button" class="danger-button" data-admin-action="rejected" data-user-id="${user.id}">Rifiuta</button>
+    `;
+
+  const roleControls = canManageRoles
+    ? `
+      <div class="role-edit-wrap">
+        <select data-role-select data-user-id="${user.id}" ${isSelf ? 'disabled' : ''}>
+          ${roleOptionsMarkup(user.role)}
+        </select>
+        <button type="button" class="secondary-button" data-role-save data-user-id="${user.id}" ${isSelf ? 'disabled' : ''}>Salva ruolo</button>
+      </div>
+    `
+    : `<span class="muted">${escapeHtml(formatRole(user.role))}</span>`;
+
   return `
     <tr>
-      <td>${escapeHtml(user.username)}</td>
+      <td>${escapeHtml(user.username)}${isSelf ? ' <span class="muted">(tu)</span>' : ''}</td>
       <td><span class="status-chip ${statusClass}">${escapeHtml(formatUserStatus(user.status))}</span></td>
-      <td>${escapeHtml(user.role)}</td>
+      <td>${escapeHtml(formatRole(user.role))}</td>
       <td>${user.createdAt ? new Date(user.createdAt).toLocaleString('it-IT') : '-'}</td>
-      <td class="admin-actions-cell">
-        ${user.role === 'admin' ? '<span class="muted">Admin fisso</span>' : `
-          <button type="button" data-admin-action="approved" data-user-id="${user.id}">Approva</button>
-          <button type="button" class="secondary-button" data-admin-action="pending" data-user-id="${user.id}">Rimetti in attesa</button>
-          <button type="button" class="danger-button" data-admin-action="rejected" data-user-id="${user.id}">Rifiuta</button>
-        `}
-      </td>
+      <td class="admin-actions-cell">${statusControls}</td>
+      <td class="admin-actions-cell">${roleControls}</td>
     </tr>
   `;
 }
@@ -230,6 +272,7 @@ async function loadAdminUsers() {
   const tableWrap = document.getElementById('adminUsersWrap');
   const feedback = document.getElementById('adminFeedback');
   if (!tableWrap) return;
+  const state = getAuthState();
   tableWrap.innerHTML = '<div class="card">Caricamento utenti...</div>';
   try {
     const result = await authFetchJson('/api/admin/users');
@@ -242,15 +285,17 @@ async function loadAdminUsers() {
               <th>Stato</th>
               <th>Ruolo</th>
               <th>Registrato il</th>
-              <th>Azioni</th>
+              <th>Gestione stato</th>
+              <th>Gestione ruolo</th>
             </tr>
           </thead>
           <tbody>
-            ${result.users.map(adminRow).join('')}
+            ${result.users.map((user) => adminRow(user, state)).join('')}
           </tbody>
         </table>
       </div>
     `;
+
     tableWrap.querySelectorAll('[data-admin-action]').forEach((button) => {
       button.addEventListener('click', async () => {
         const userId = button.getAttribute('data-user-id');
@@ -262,6 +307,26 @@ async function loadAdminUsers() {
             body: JSON.stringify({ status })
           });
           feedback.textContent = payload.messaggio || 'Utente aggiornato';
+          await loadAdminUsers();
+        } catch (error) {
+          feedback.textContent = error.message;
+        }
+      });
+    });
+
+    tableWrap.querySelectorAll('[data-role-save]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const userId = button.getAttribute('data-user-id');
+        const select = tableWrap.querySelector(`[data-role-select][data-user-id="${userId}"]`);
+        if (!select) return;
+        const role = select.value;
+        feedback.textContent = 'Aggiornamento ruolo in corso...';
+        try {
+          const payload = await authFetchJson(`/api/admin/users/${userId}/role`, {
+            method: 'POST',
+            body: JSON.stringify({ role })
+          });
+          feedback.textContent = payload.messaggio || 'Ruolo aggiornato';
           await loadAdminUsers();
         } catch (error) {
           feedback.textContent = error.message;
@@ -291,7 +356,11 @@ window.__authReady = authFetchJson('/api/auth/me')
     window.__authState = {
       isAuthenticated: false,
       canAccessProtected: false,
+      isModerator: false,
       isAdmin: false,
+      isSeniorAdmin: false,
+      canManageUsers: false,
+      canManageRoles: false,
       user: null
     };
     renderAuthNav();

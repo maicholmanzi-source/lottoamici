@@ -12,7 +12,9 @@ import {
   getSessionWithUser,
   initAuthStore,
   listUsers,
+  updateUserRole,
   updateUserStatus,
+  USER_ROLES,
   verifyPassword
 } from "./auth-store.js";
 import {
@@ -2564,15 +2566,42 @@ function parseCookies(cookieHeader = "") {
     }, {});
 }
 
+const ROLE_RANK = {
+  user: 0,
+  moderatore: 1,
+  admin: 2,
+  admin_senior: 3
+};
+
+function getRoleRank(role = "user") {
+  return ROLE_RANK[role] ?? 0;
+}
+
+function isStaffRole(role = "user") {
+  return getRoleRank(role) >= ROLE_RANK.moderatore;
+}
+
+function canAccessAdminPanel(user) {
+  return getRoleRank(user?.role) >= ROLE_RANK.admin;
+}
+
+function isSeniorAdmin(user) {
+  return getRoleRank(user?.role) >= ROLE_RANK.admin_senior;
+}
+
 function isApprovedUser(user) {
-  return Boolean(user && (user.role === "admin" || user.status === "approved"));
+  return Boolean(user && (canAccessAdminPanel(user) || user.status === "approved"));
 }
 
 function authPayload(user) {
   return {
     isAuthenticated: Boolean(user),
     canAccessProtected: isApprovedUser(user),
-    isAdmin: Boolean(user?.role === "admin"),
+    isModerator: Boolean(isStaffRole(user?.role)),
+    isAdmin: Boolean(canAccessAdminPanel(user)),
+    isSeniorAdmin: Boolean(isSeniorAdmin(user)),
+    canManageUsers: Boolean(canAccessAdminPanel(user)),
+    canManageRoles: Boolean(isSeniorAdmin(user)),
     user: user
       ? {
           id: user.id,
@@ -2642,13 +2671,13 @@ function requireApprovedApi(req, res, next) {
 }
 
 function requireAdminPage(req, res, next) {
-  if (req.authUser?.role === "admin") return next();
+  if (canAccessAdminPanel(req.authUser)) return next();
   if (!req.authUser) return res.redirect("/login.html?next=/admin.html");
   return res.redirect("/");
 }
 
 function requireAdminApi(req, res, next) {
-  if (req.authUser?.role === "admin") return next();
+  if (canAccessAdminPanel(req.authUser)) return next();
   if (!req.authUser) return res.status(401).json({ errore: "Accesso richiesto" });
   return res.status(403).json({ errore: "Permesso negato" });
 }
@@ -2747,7 +2776,7 @@ app.post("/api/auth/register", async (req, res) => {
 
     const user = await createUser({ username, password });
     res.status(201).json({
-      messaggio: "Registrazione inviata. Ora attendi l'approvazione dell'admin.",
+      messaggio: "Registrazione inviata. Ora attendi l'approvazione dello staff.",
       user
     });
   } catch (error) {
@@ -2765,14 +2794,14 @@ app.post("/api/auth/login", async (req, res) => {
       return res.status(401).json({ errore: "Credenziali non valide" });
     }
 
-    if (user.status === "rejected" && user.role !== "admin") {
+    if (user.status === "rejected" && !canAccessAdminPanel(user)) {
       return res.status(403).json({ errore: "Account non approvato. Contatta l'amministratore." });
     }
 
     const { token, expiresAt } = await createSession(user.id);
     setSessionCookie(res, token, expiresAt);
 
-    const nextPath = user.role === "admin" ? "/admin.html" : user.status === "pending" ? "/waiting-approval.html" : "/";
+    const nextPath = canAccessAdminPanel(user) ? "/admin.html" : user.status === "pending" ? "/waiting-approval.html" : "/";
     res.json({
       messaggio: user.status === "pending" ? "Accesso eseguito. Il tuo account è in attesa di approvazione." : "Accesso eseguito.",
       nextPath,
@@ -2826,6 +2855,41 @@ app.post("/api/admin/users/:id/status", requireAdminApi, async (req, res) => {
     res.json({ messaggio: `Utente ${user.username} aggiornato a ${status}.`, user });
   } catch (error) {
     res.status(500).json({ errore: "Aggiornamento utente non riuscito" });
+  }
+});
+
+app.post("/api/admin/users/:id/role", requireAdminApi, async (req, res) => {
+  try {
+    if (!isSeniorAdmin(req.authUser)) {
+      return res.status(403).json({ errore: "Solo un admin senior può cambiare i ruoli." });
+    }
+
+    const role = String(req.body?.role || "");
+    if (!USER_ROLES.includes(role)) {
+      return res.status(400).json({ errore: "Ruolo non valido" });
+    }
+
+    const targetUserId = Number(req.params.id);
+    if (!Number.isFinite(targetUserId)) {
+      return res.status(400).json({ errore: "Utente non valido" });
+    }
+
+    if (req.authUser?.id === targetUserId && role !== "admin_senior") {
+      return res.status(400).json({ errore: "L'admin senior corrente non può abbassare da solo il proprio livello." });
+    }
+
+    const user = await updateUserRole(targetUserId, role);
+    if (!user) {
+      return res.status(404).json({ errore: "Utente non trovato" });
+    }
+
+    if (user.id === req.authUser?.id) {
+      req.authUser = { ...req.authUser, role: user.role, status: user.status };
+    }
+
+    res.json({ messaggio: `Ruolo di ${user.username} aggiornato a ${role}.`, user });
+  } catch (error) {
+    res.status(500).json({ errore: error.message || "Aggiornamento ruolo non riuscito" });
   }
 });
 

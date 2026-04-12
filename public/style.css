@@ -2019,3 +2019,19 @@ body.home-page .section-title-row .muted {
     padding: 10px;
   }
 }
+
+.role-edit-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.role-edit-wrap select {
+  min-width: 150px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #d6c1a5;
+  background: #fffdf9;
+  color: #5b2a16;
+}

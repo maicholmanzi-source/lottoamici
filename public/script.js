@@ -27,6 +27,8 @@ const homeChatList = document.getElementById("homeChatList");
 const homeChatFeedback = document.getElementById("homeChatFeedback");
 const homeChatCount = document.getElementById("homeChatCount");
 let homeChatPoll = null;
+let homeChatLastRefresh = 0;
+const HOME_CHAT_POLL_MS = 8000;
 
 function getAuthStateSnapshot() {
   return window.__authState || {
@@ -1022,13 +1024,16 @@ function renderHomeChatMessages(messages = []) {
   homeChatList.scrollTop = homeChatList.scrollHeight;
 }
 
-async function loadHomeChatMessages() {
+async function loadHomeChatMessages(force = false) {
   if (!homeChatSection || homeChatSection.hidden || !getAuthStateSnapshot().canAccessProtected) return;
+  const now = Date.now();
+  if (!force && now - homeChatLastRefresh < 2500) return;
   try {
     const data = await authFetchJson('/api/chat/messages');
+    homeChatLastRefresh = Date.now();
     renderHomeChatMessages(data.messages || []);
     if (homeChatFeedback) {
-      homeChatFeedback.textContent = `Chat privata attiva · cancellazione automatica dopo ${data.ttlHours || 24} ore.`;
+      homeChatFeedback.textContent = `Chat privata attiva · aggiornamento automatico ogni ${Math.round(HOME_CHAT_POLL_MS / 1000)} secondi · cancellazione automatica dopo ${data.ttlHours || 24} ore.`;
     }
   } catch (error) {
     if (homeChatList) {
@@ -1075,9 +1080,16 @@ function initHomeChat() {
     }
   });
 
-  loadHomeChatMessages();
+  loadHomeChatMessages(true);
   if (homeChatPoll) clearInterval(homeChatPoll);
-  homeChatPoll = setInterval(loadHomeChatMessages, 45000);
+  homeChatPoll = setInterval(() => loadHomeChatMessages(), HOME_CHAT_POLL_MS);
+
+  window.addEventListener('focus', () => loadHomeChatMessages(true));
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      loadHomeChatMessages(true);
+    }
+  });
 }
 
 function renderMyTicketCard(ticket) {
