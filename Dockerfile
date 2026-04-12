@@ -5,7 +5,7 @@ WORKDIR /app
 COPY package*.json ./
 COPY .npmrc ./
 
-RUN npm install --no-audit --prefer-offline
+RUN npm ci --omit=dev --no-audit
 
 COPY . .
 

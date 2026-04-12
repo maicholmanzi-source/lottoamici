@@ -1926,8 +1926,7 @@ body.home-page .section-title-row .muted {
 
 .home-chat-form textarea {
   width: 100%;
-  min-height: 76px;
-  max-height: 130px;
+  min-height: 92px;
   border-radius: 18px;
   border: 1px solid rgba(125, 28, 28, 0.22);
   padding: 14px 16px;
@@ -1948,36 +1947,15 @@ body.home-page .section-title-row .muted {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  height: 260px;
-  max-height: 260px;
+  max-height: 420px;
   overflow-y: auto;
-  padding: 12px;
-  padding-right: 8px;
-  border-radius: 20px;
-  border: 1px solid rgba(125, 28, 28, 0.14);
-  background: rgba(255,255,255,0.72);
-  box-shadow: inset 0 2px 12px rgba(125, 28, 28, 0.05);
-  scrollbar-gutter: stable;
-}
-
-.home-chat-list::-webkit-scrollbar {
-  width: 10px;
-}
-
-.home-chat-list::-webkit-scrollbar-track {
-  background: rgba(125, 28, 28, 0.08);
-  border-radius: 999px;
-}
-
-.home-chat-list::-webkit-scrollbar-thumb {
-  background: rgba(125, 28, 28, 0.35);
-  border-radius: 999px;
+  padding-right: 4px;
 }
 
 .home-chat-message {
   border-radius: 18px;
   padding: 14px 16px;
-  background: rgba(255,255,255,0.96);
+  background: rgba(255,255,255,0.88);
   border: 1px solid rgba(125, 28, 28, 0.1);
   box-shadow: 0 6px 18px rgba(0,0,0,0.06);
 }
@@ -2011,11 +1989,5 @@ body.home-page .section-title-row .muted {
   .home-chat-message-head {
     flex-direction: column;
     align-items: flex-start;
-  }
-
-  .home-chat-list {
-    height: 220px;
-    max-height: 220px;
-    padding: 10px;
   }
 }
