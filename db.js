@@ -1,4 +1,6 @@
-import { Pool } from 'pg';
+import pg from 'pg';
+
+const { Pool } = pg;
 
 const DATABASE_URL = String(process.env.DATABASE_URL || '').trim();
 
