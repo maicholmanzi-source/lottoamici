@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Le mie schedine</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="hero">
+    <nav class="nav">
+      <a href="/">Home</a>
+      <a href="/mie-schedine.html" class="active">Le mie schedine</a>
+      <a href="/schedine-pronte.html">Schedine pronte</a>
+      <a href="/giocate.html">Giocate</a>
+      <a href="/verifica-schedina.html">Verifica schedina</a>
+      <a href="/metodi.html">Metodi</a>
+      <a href="/fai-3-fai-4.html">Fai 3 Fai 4</a>
+    </nav>
+
+    <h1>Le mie schedine giocate</h1>
+    <p>Salva le tue schedine: restano visibili solo al tuo account e il sistema controlla se hai vinto e quanto.</p>
+    <p id="mieSchedineInfo" class="muted">Caricamento delle tue schedine...</p>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <div class="home-box-header">
+        <div>
+          <h2>Aggiungi una nuova schedina</h2>
+          <p class="muted">Puoi usare Lotto base, Numero Oro oppure Lotto Più 3/4/5. Ogni account può salvare fino a 10 schedine personali.</p>
+        </div>
+      </div>
+
+      <form id="mieSchedineForm" class="my-ticket-form">
+        <div class="form-grid two-columns">
+          <label>
+            <span>Data estrazione</span>
+            <input type="date" name="date" required />
+          </label>
+          <label>
+            <span>Modalità</span>
+            <select name="mode" id="myTicketMode">
+              <option value="base">Lotto base</option>
+              <option value="lotto-piu-3">Lotto Più 3€</option>
+              <option value="lotto-piu-4">Lotto Più 4€</option>
+              <option value="lotto-piu-5">Lotto Più 5€</option>
+            </select>
+          </label>
+        </div>
+
+        <label>
+          <span>Numeri giocati</span>
+          <input type="text" name="numbers" placeholder="es. 9 90 12" required />
+          <small class="muted">Inserisci da 1 a 10 numeri separati da spazio, virgola o trattino.</small>
+        </label>
+
+        <fieldset class="ruote-picker">
+          <legend>Ruote</legend>
+          <div id="myTicketWheels" class="ruote-grid compact"></div>
+        </fieldset>
+
+        <div id="myTicketBaseOptions" class="card subtle-card compact-form-card">
+          <div class="form-grid two-columns">
+            <label class="checkbox-label inline-option">
+              <input type="checkbox" name="numberOro" />
+              <span>Numero Oro</span>
+            </label>
+            <div></div>
+          </div>
+          <div class="form-grid amounts-grid">
+            <label><span>Estratto €</span><input type="number" name="estratto" step="0.01" min="0" value="0" /></label>
+            <label><span>Ambo €</span><input type="number" name="ambo" step="0.01" min="0" value="1" /></label>
+            <label><span>Terno €</span><input type="number" name="terno" step="0.01" min="0" value="0" /></label>
+            <label><span>Quaterna €</span><input type="number" name="quaterna" step="0.01" min="0" value="0" /></label>
+            <label><span>Cinquina €</span><input type="number" name="cinquina" step="0.01" min="0" value="0" /></label>
+          </div>
+        </div>
+
+        <label>
+          <span>Nota personale</span>
+          <input type="text" name="note" maxlength="120" placeholder="es. giocata del sabato" />
+        </label>
+
+        <div class="my-ticket-form-actions">
+          <button type="submit">Salva schedina</button>
+          <button type="button" id="resetMieSchedineForm" class="secondary-button">Pulisci</button>
+        </div>
+        <p id="mieSchedineFeedback" class="muted"></p>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="home-box-header">
+        <div>
+          <h2>Archivio personale</h2>
+          <p class="muted">Solo tu puoi vedere queste schedine e il relativo esito.</p>
+        </div>
+      </div>
+      <div id="mieSchedineList" class="cards">
+        <div class="card">Nessuna schedina caricata.</div>
+      </div>
+    </section>
+  </main>
+
+  <script src="auth.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Schedine pronte</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="hero">
+    <nav class="nav">
+      <a href="/">Home</a>
+      <a href="/schedine-pronte.html" class="active">Schedine pronte</a>
+      <a href="/giocate.html">Giocate</a>
+      <a href="/verifica-schedina.html">Verifica schedina</a>
+      <a href="/metodi.html">Metodi</a>
+      <a href="/fai-3-fai-4.html">Fai 3 Fai 4</a>
+    </nav>
+
+    <h1>Schedine pronte da giocare</h1>
+    <p>Una selezione pronta all'uso ricavata dai metodi, con completamento automatico dove serve.</p>
+    <p id="schedineInfo" class="muted">Sto preparando le schedine consigliate...</p>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <div class="home-box-header">
+        <div>
+          <h2>Le mie schedine pronte</h2>
+          <p class="muted">
+            Scegli se vuoi giocare in ambo, terno, quaterna o cinquina: il sistema genera schedine casuali
+            tenendo conto dei numeri del metodo e completa automaticamente i numeri mancanti quando serve.
+          </p>
+        </div>
+        <div class="schedine-toolbar">
+          <div class="ticket-filter-group">
+            <label for="tipoSchedina">Tipo di giocata</label>
+            <select id="tipoSchedina">
+              <option value="ambo">Ambo</option>
+              <option value="terno">Terno</option>
+              <option value="quaterna">Quaterna</option>
+              <option value="cinquina">Cinquina</option>
+            </select>
+          </div>
+          <button id="aggiornaSchedinePronte" type="button">Rigenera schedine</button>
+        </div>
+      </div>
+
+      <div id="schedinePronteGrid" class="cards">
+        <div class="card">Caricamento schedine...</div>
+      </div>
+    </section>
+  </main>
+
+  <script src="auth.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

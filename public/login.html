@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Accedi</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="hero">
+    <nav class="nav">
+      <a href="/">Home</a>
+      <a href="/login.html" class="active">Accedi</a>
+      <a href="/register.html">Registrati</a>
+    </nav>
+    <h1>Accedi al sito</h1>
+    <p>Gli utenti approvati possono vedere metodi, giocate e verifica schedina.</p>
+  </header>
+
+  <main class="container narrow-container">
+    <section class="card auth-card">
+      <h2>Login</h2>
+      <form id="loginForm" class="auth-form">
+        <label>
+          Nome utente
+          <input type="text" name="username" required minlength="3" maxlength="24" />
+        </label>
+        <label>
+          Password
+          <input type="password" name="password" required minlength="8" />
+        </label>
+        <button type="submit">Accedi</button>
+      </form>
+      <p id="loginFeedback" class="muted"></p>
+      <p class="muted">Non hai un account? <a href="/register.html">Registrati qui</a>.</p>
+    </section>
+  </main>
+  <script src="auth.js"></script>
+</body>
+</html>

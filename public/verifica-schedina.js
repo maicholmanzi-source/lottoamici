@@ -1,0 +1,1230 @@
+const RUOTE = [
+  "Bari",
+  "Cagliari",
+  "Firenze",
+  "Genova",
+  "Milano",
+  "Napoli",
+  "Palermo",
+  "Roma",
+  "Torino",
+  "Venezia",
+  "Nazionale"
+];
+
+const RUOTE_TUTTE = ["Bari", "Cagliari", "Firenze", "Genova", "Milano", "Napoli", "Palermo", "Roma", "Torino", "Venezia"];
+const RUOTE_CON_TUTTE = ["Tutte", ...RUOTE];
+const SIZES = { estratto: 1, ambo: 2, terno: 3, quaterna: 4, cinquina: 5 };
+
+const PREMI_PER_EURO = {
+  1: { estratto: 11.23 },
+  2: { estratto: 5.62, ambo: 250 },
+  3: { estratto: 3.74, ambo: 83.33, terno: 4500 },
+  4: { estratto: 2.81, ambo: 41.67, terno: 1125, quaterna: 120000 },
+  5: { estratto: 2.25, ambo: 25, terno: 450, quaterna: 24000, cinquina: 6000000 },
+  6: { estratto: 1.87, ambo: 16.67, terno: 225, quaterna: 8000, cinquina: 1000000 },
+  7: { estratto: 1.6, ambo: 11.9, terno: 128.57, quaterna: 3428.57, cinquina: 285714.29 },
+  8: { estratto: 1.4, ambo: 8.93, terno: 80.36, quaterna: 1714.29, cinquina: 107142.86 },
+  9: { estratto: 1.25, ambo: 6.34, terno: 53.57, quaterna: 952.38, cinquina: 47619.05 },
+  10: { estratto: 1.12, ambo: 5.56, terno: 37.5, quaterna: 571.43, cinquina: 23809.52 }
+};
+
+const NUMERO_ORO_RATES = {
+  2: { ambo: { withOro: 650, soloOro: 15 } },
+  3: {
+    ambo: { withOro: 216.67, soloOro: 5 },
+    terno: { withOro: 10000, soloOro: 10 }
+  },
+  4: {
+    ambo: { withOro: 108.33, soloOro: 2.5 },
+    terno: { withOro: 2500, soloOro: 2.5 },
+    quaterna: { withOro: 250000, soloOro: 5 }
+  },
+  5: {
+    ambo: { withOro: 65, soloOro: 1.5 },
+    terno: { withOro: 1000, soloOro: 1 },
+    quaterna: { withOro: 50000, soloOro: 1 }
+  },
+  6: {
+    ambo: { withOro: 43.33, soloOro: 1 },
+    terno: { withOro: 500, soloOro: 0.5 },
+    quaterna: { withOro: 16666.67, soloOro: 0.33 }
+  },
+  7: {
+    ambo: { withOro: 30.95, soloOro: 0.71 },
+    terno: { withOro: 287.51, soloOro: 0.29 },
+    quaterna: { withOro: 7142.86, soloOro: 0.14 }
+  },
+  8: {
+    ambo: { withOro: 21.21, soloOro: 0.54 },
+    terno: { withOro: 178.57, soloOro: 0.18 },
+    quaterna: { withOro: 3571.43, soloOro: 0.07 }
+  },
+  9: {
+    ambo: { withOro: 18.06, soloOro: 0.42 },
+    terno: { withOro: 119.05, soloOro: 0.12 },
+    quaterna: { withOro: 1983.13, soloOro: 0.04 }
+  },
+  10: {
+    ambo: { withOro: 14.44, soloOro: 0.33 },
+    terno: { withOro: 83.33, soloOro: 0.08 },
+    quaterna: { withOro: 1190.48, soloOro: 0.02 }
+  }
+};
+
+const LOTTO_PIU_CONFIG = {
+  "lotto-piu-3": {
+    label: "Lotto Più 3€",
+    expectedNumbers: 3,
+    cost: 3,
+    stakes: { estratto: 0, ambo: 2, terno: 1, quaterna: 0, cinquina: 0 },
+    payoutPerCombo: { ambo: 180, terno: 5540 }
+  },
+  "lotto-piu-4": {
+    label: "Lotto Più 4€",
+    expectedNumbers: 4,
+    cost: 4,
+    stakes: { estratto: 0, ambo: 2, terno: 1, quaterna: 1, cinquina: 0 },
+    payoutPerCombo: { ambo: 100, terno: 1800, quaterna: 216000 }
+  },
+  "lotto-piu-5": {
+    label: "Lotto Più 5€",
+    expectedNumbers: 5,
+    cost: 5,
+    stakes: { estratto: 0, ambo: 2, terno: 1.5, quaterna: 1, cinquina: 0.5 },
+    payoutPerCombo: { ambo: 66, terno: 1248, quaterna: 50596, cinquina: 4241160 }
+  }
+};
+
+const estrazioneSelect = document.getElementById("estrazioneSelect");
+const ruoteContainer = document.getElementById("ruoteContainer");
+const numeriGiocatiInput = document.getElementById("numeriGiocati");
+const risultatoVerifica = document.getElementById("risultatoVerifica");
+const testoSchedina = document.getElementById("testoSchedina");
+const statoOCR = document.getElementById("statoOCR");
+const ocrHints = document.getElementById("ocrHints");
+const fileInput = document.getElementById("immagineSchedina");
+const cameraPreview = document.getElementById("cameraPreview");
+const cameraCanvas = document.getElementById("cameraCanvas");
+const avviaCameraBtn = document.getElementById("avviaCamera");
+const fermaCameraBtn = document.getElementById("fermaCamera");
+const leggiQrCameraBtn = document.getElementById("leggiQrCamera");
+const scattaFotoBtn = document.getElementById("scattaFoto");
+const leggiQrImmagineBtn = document.getElementById("leggiQrImmagine");
+const leggiImmagineBtn = document.getElementById("leggiImmagine");
+const analizzaCodiceBtn = document.getElementById("analizzaCodice");
+const analizzaTestoBtn = document.getElementById("analizzaTesto");
+const pulisciTestoBtn = document.getElementById("pulisciTesto");
+const verificaSchedinaBtn = document.getElementById("verificaSchedina");
+const numeroOroInput = document.getElementById("numeroOro");
+const gameModeHint = document.getElementById("gameModeHint");
+const usaContrastoAlto = document.getElementById("usaContrastoAlto");
+const previewWrapper = document.getElementById("previewWrapper");
+const previewImmagine = document.getElementById("previewImmagine");
+const statoQR = document.getElementById("statoQR");
+const qrPayloadInput = document.getElementById("qrPayload");
+const serialeSchedinaInput = document.getElementById("serialeSchedina");
+const dataSchedinaInput = document.getElementById("dataSchedina");
+const modeInputs = [...document.querySelectorAll('input[name="modalitaGioco"]')];
+
+const amountInputs = {
+  estratto: document.getElementById("importoEstratto"),
+  ambo: document.getElementById("importoAmbo"),
+  terno: document.getElementById("importoTerno"),
+  quaterna: document.getElementById("importoQuaterna"),
+  cinquina: document.getElementById("importoCinquina")
+};
+
+let ultimeEstrazioni = [];
+let cameraStream = null;
+let capturedImageDataUrl = "";
+let lastQrPayload = "";
+
+function isLikelyMobile() {
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.matchMedia("(max-width: 768px)").matches;
+}
+
+function formatNumero(numero) {
+  return String(numero).padStart(2, "0");
+}
+
+function formatEuro(value) {
+  return new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(value || 0);
+}
+
+function normalizeText(text) {
+  return String(text || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/€/g, " E ")
+    .replace(/[|]/g, "I")
+    .replace(/[\r\t]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function escapeHtml(text) {
+  return String(text || "").replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[char]));
+}
+
+function normalizeCodeText(text) {
+  return String(text || "")
+    .replace(/[\x00-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function setPreviewImage(src) {
+  if (!src) return;
+  previewWrapper.classList.remove("hidden");
+  previewImmagine.src = src;
+}
+
+function updateQrStatus(message = "", level = "info") {
+  if (!statoQR) return;
+  statoQR.textContent = message;
+  statoQR.classList.remove("status-ok", "status-warn");
+  if (level === "ok") statoQR.classList.add("status-ok");
+  if (level === "warn") statoQR.classList.add("status-warn");
+}
+
+function extractTicketMeta(text) {
+  const clean = normalizeCodeText(text).toUpperCase();
+  const dateMatch = clean.match(/(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})/);
+  const tokens = [...clean.matchAll(/[A-Z0-9]{6,}/g)].map((match) => match[0]);
+
+  const serialCandidates = tokens.filter((token) => {
+    const hasLetters = /[A-Z]/.test(token);
+    const hasDigits = /\d/.test(token);
+    return hasLetters && hasDigits && token.length <= 40;
+  });
+
+  const serial = serialCandidates[0] || tokens.find((token) => token.length >= 12) || "";
+  return {
+    serial,
+    date: dateMatch?.[1] || "",
+    tokens
+  };
+}
+
+function fillTicketMetaFields(meta = {}) {
+  if (meta.serial) serialeSchedinaInput.value = meta.serial;
+  if (meta.date) dataSchedinaInput.value = meta.date;
+}
+
+function expandPayloadText(payload) {
+  const parts = [normalizeCodeText(payload)];
+
+  try {
+    const decoded = decodeURIComponent(payload);
+    if (decoded && decoded !== payload) parts.push(normalizeCodeText(decoded));
+  } catch (error) {
+    // payload non codificato in URL
+  }
+
+  try {
+    const url = new URL(payload);
+    parts.push(normalizeCodeText(url.pathname));
+    url.searchParams.forEach((value, key) => {
+      parts.push(`${key} ${value}`);
+    });
+  } catch (error) {
+    // non è un URL: nessun problema
+  }
+
+  return parts.filter(Boolean).join("\n");
+}
+
+function applyQrPayload(payload, options = {}) {
+  const normalizedPayload = normalizeCodeText(payload);
+  const { allowAutofill = true } = options;
+
+  if (!normalizedPayload) {
+    updateQrStatus("Nessun QR letto.", "warn");
+    return { autofilled: false, hasPlayableData: false };
+  }
+
+  lastQrPayload = normalizedPayload;
+  qrPayloadInput.value = normalizedPayload;
+
+  const expandedText = expandPayloadText(normalizedPayload);
+  const meta = extractTicketMeta(expandedText);
+  fillTicketMetaFields(meta);
+  if (meta.date) applyDetectedEstrazione(meta.date);
+
+  const parsedNumbers = parseNumbers(expandedText);
+  const parsedRuote = parseRuoteFromText(expandedText);
+  const parsedAmounts = parseAmountsFromText(expandedText);
+  const hasPlayableData = parsedNumbers.length >= 2 || parsedRuote.length > 0 || Object.values(parsedAmounts).some((value) => value > 0);
+
+  if (allowAutofill && hasPlayableData) {
+    applyParsedData(expandedText);
+    updateQrStatus("QR letto e dati della giocata compilati.", "ok");
+    return { autofilled: true, hasPlayableData: true, expandedText, meta };
+  }
+
+  if (meta.serial || meta.date) {
+    updateQrStatus("QR letto. Ho recuperato il codice della schedina; completo il resto con OCR o correzione manuale.", "ok");
+  } else {
+    updateQrStatus("QR letto, ma non contiene abbastanza dati per una verifica completa automatica.", "warn");
+  }
+
+  return { autofilled: false, hasPlayableData, expandedText, meta };
+}
+
+function buildCanvasFromSource(source, crop = null) {
+  const sourceWidth = source.videoWidth || source.naturalWidth || source.width;
+  const sourceHeight = source.videoHeight || source.naturalHeight || source.height;
+  const sx = crop ? Math.max(0, Math.round(sourceWidth * crop.x)) : 0;
+  const sy = crop ? Math.max(0, Math.round(sourceHeight * crop.y)) : 0;
+  const sw = crop ? Math.max(1, Math.round(sourceWidth * crop.w)) : sourceWidth;
+  const sh = crop ? Math.max(1, Math.round(sourceHeight * crop.h)) : sourceHeight;
+  const maxSide = 1600;
+  const scale = Math.min(1, maxSide / Math.max(sw, sh));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(sw * scale));
+  canvas.height = Math.max(1, Math.round(sh * scale));
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  ctx.drawImage(source, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+
+function buildContrastCanvas(baseCanvas) {
+  const canvas = document.createElement("canvas");
+  canvas.width = baseCanvas.width;
+  canvas.height = baseCanvas.height;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  ctx.drawImage(baseCanvas, 0, 0);
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
+
+  for (let i = 0; i < data.length; i += 4) {
+    const gray = (data[i] + data[i + 1] + data[i + 2]) / 3;
+    const boosted = gray > 170 ? 255 : gray < 80 ? 0 : Math.min(255, Math.max(0, (gray - 95) * 2.8));
+    data[i] = boosted;
+    data[i + 1] = boosted;
+    data[i + 2] = boosted;
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+  return canvas;
+}
+
+function buildThresholdCanvas(baseCanvas, threshold = 150) {
+  const canvas = document.createElement("canvas");
+  canvas.width = baseCanvas.width;
+  canvas.height = baseCanvas.height;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  ctx.drawImage(baseCanvas, 0, 0);
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
+
+  for (let i = 0; i < data.length; i += 4) {
+    const gray = (data[i] + data[i + 1] + data[i + 2]) / 3;
+    const value = gray >= threshold ? 255 : 0;
+    data[i] = value;
+    data[i + 1] = value;
+    data[i + 2] = value;
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+  return canvas;
+}
+
+async function detectWithBarcodeDetectorFromCanvas(canvas) {
+  if (!("BarcodeDetector" in window)) return "";
+
+  try {
+    const supported = typeof window.BarcodeDetector.getSupportedFormats === "function"
+      ? await window.BarcodeDetector.getSupportedFormats()
+      : [];
+    const formats = ["qr_code", "data_matrix"].filter((format) => !supported.length || supported.includes(format));
+    const detector = new window.BarcodeDetector(formats.length ? { formats } : undefined);
+    const detected = await detector.detect(canvas);
+    return detected?.[0]?.rawValue || "";
+  } catch (error) {
+    return "";
+  }
+}
+
+function detectWithJsQRFromCanvas(canvas) {
+  if (!window.jsQR) return "";
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const result = window.jsQR(imageData.data, canvas.width, canvas.height, { inversionAttempts: "attemptBoth" });
+  return result?.data || "";
+}
+
+async function scanQRCodeFromSource(source) {
+  const crops = [
+    null,
+    { x: 0.34, y: 0.02, w: 0.64, h: 0.72 },
+    { x: 0.42, y: 0.05, w: 0.56, h: 0.72 },
+    { x: 0.48, y: 0.12, w: 0.5, h: 0.62 }
+  ];
+
+  const variants = [];
+  for (const crop of crops) {
+    const base = buildCanvasFromSource(source, crop);
+    variants.push(base, buildContrastCanvas(base), buildThresholdCanvas(base, 145));
+  }
+
+  for (const canvas of variants) {
+    const barcodeValue = await detectWithBarcodeDetectorFromCanvas(canvas);
+    if (barcodeValue) return barcodeValue;
+
+    const qrValue = detectWithJsQRFromCanvas(canvas);
+    if (qrValue) return qrValue;
+  }
+
+  return "";
+}
+
+async function scanQRCodeFromImageSrc(imageSrc) {
+  const img = await loadImage(imageSrc);
+  return scanQRCodeFromSource(img);
+}
+
+async function processTicketImage(imageSrc) {
+  if (!imageSrc) {
+    statoOCR.textContent = "Seleziona o cattura prima un'immagine.";
+    return;
+  }
+
+  capturedImageDataUrl = imageSrc;
+  setPreviewImage(imageSrc);
+  updateQrStatus("Cerco il QR della schedina...", "info");
+  statoOCR.textContent = "Analisi immagine in corso...";
+
+  try {
+    const qrPayload = await scanQRCodeFromImageSrc(imageSrc);
+    if (qrPayload) {
+      const qrResult = applyQrPayload(qrPayload);
+      if (qrResult.autofilled) {
+        statoOCR.textContent = "QR letto e dati compilati. Controlla i campi prima della verifica.";
+        return;
+      }
+      statoOCR.textContent = "QR letto. Completo i dati con OCR...";
+    } else {
+      updateQrStatus("Nessun QR letto nell'immagine. Provo con OCR.", "warn");
+    }
+  } catch (error) {
+    updateQrStatus(`Errore lettura QR: ${error.message}`, "warn");
+  }
+
+  await runOCR(imageSrc, { qrAttempted: true });
+}
+
+function nCr(n, r) {
+  if (r > n || r < 0) return 0;
+  if (r === 0 || r === n) return 1;
+  let result = 1;
+  for (let i = 1; i <= r; i++) {
+    result = (result * (n - r + i)) / i;
+  }
+  return result;
+}
+
+function getCurrentMode() {
+  return modeInputs.find((input) => input.checked)?.value || "base";
+}
+
+function setCurrentMode(mode) {
+  const target = modeInputs.find((input) => input.value === mode);
+  if (target) target.checked = true;
+  updateModeCards();
+  applyModeBehavior();
+}
+
+function updateModeCards() {
+  document.querySelectorAll("[data-mode-card]").forEach((card) => {
+    const input = card.querySelector('input[type="radio"]');
+    card.classList.toggle("active-mode", Boolean(input?.checked));
+  });
+}
+
+function createWheelCheckboxes() {
+  ruoteContainer.innerHTML = RUOTE_CON_TUTTE.map(
+    (ruota) => `
+      <label class="wheel-option">
+        <input type="checkbox" name="ruote" value="${ruota}" />
+        <span>${ruota}</span>
+      </label>
+    `
+  ).join("");
+
+  ruoteContainer.addEventListener("change", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement)) return;
+    const all = [...ruoteContainer.querySelectorAll('input[name="ruote"]')];
+    const tutte = all.find((input) => input.value === "Tutte");
+
+    if (target.value === "Tutte" && target.checked) {
+      all.forEach((input) => {
+        if (input.value !== "Tutte") input.checked = false;
+      });
+      return;
+    }
+
+    if (target.value !== "Tutte" && target.checked && tutte) {
+      tutte.checked = false;
+    }
+  });
+}
+
+function getSelectedRuote() {
+  return [...ruoteContainer.querySelectorAll('input[name="ruote"]:checked')].map((input) => input.value);
+}
+
+function setSelectedRuote(ruote) {
+  const normalized = new Set((ruote || []).map((r) => r.toLowerCase()));
+  const inputs = [...ruoteContainer.querySelectorAll('input[name="ruote"]')];
+  inputs.forEach((input) => {
+    input.checked = normalized.has(input.value.toLowerCase());
+  });
+}
+
+async function caricaEstrazioni() {
+  const response = await fetch("/api/estrazioni");
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.errore || "Impossibile caricare le estrazioni");
+  }
+
+  ultimeEstrazioni = data.estrazioni || [];
+  estrazioneSelect.innerHTML = ultimeEstrazioni
+    .map(
+      (estrazione, index) =>
+        `<option value="${index}">${estrazione.dataTesto} · Concorso ${estrazione.concorso}</option>`
+    )
+    .join("");
+}
+
+function getCurrentEstrazione() {
+  const index = Number(estrazioneSelect.value || 0);
+  return ultimeEstrazioni[index];
+}
+
+function parseNumbers(text) {
+  const lines = String(text || "")
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const extractFromChunk = (chunk) => {
+    const values = (chunk.match(/\b(?:[1-9]|[1-8]\d|90)\b/g) || []).map(Number);
+    const unique = [];
+    for (const value of values) {
+      if (!unique.includes(value)) unique.push(value);
+      if (unique.length === 10) break;
+    }
+    return unique;
+  };
+
+  const preferredPatterns = [
+    /numeri\s*(?:giocati|scelti)?\s*[:\-]?\s*([\d\s,.-]{2,})/i,
+    /giocati\s*[:\-]?\s*([\d\s,.-]{2,})/i,
+    /pronostico\s*[:\-]?\s*([\d\s,.-]{2,})/i
+  ];
+
+  for (const regex of preferredPatterns) {
+    const match = String(text || "").match(regex);
+    if (match) {
+      const values = extractFromChunk(match[1]);
+      if (values.length) return values;
+    }
+  }
+
+  let best = [];
+  for (const line of lines) {
+    const numeri = extractFromChunk(line);
+    const normalized = line.toLowerCase();
+    const hasKeyword = /(ambo|terno|quaterna|cinquina|estratto|concorso|euro|importo|data|ruota)/i.test(normalized);
+    if (numeri.length >= 2 && numeri.length <= 10 && (!hasKeyword || numeri.length >= 4)) {
+      if (numeri.length > best.length) best = numeri;
+    }
+  }
+
+  if (best.length) return best;
+  return extractFromChunk(text);
+}
+
+function applyDetectedEstrazione(text) {
+  const clean = String(text || "");
+  const concorsoMatch = clean.match(/concorso\s*(\d+\/\d+)/i);
+  if (concorsoMatch) {
+    const index = ultimeEstrazioni.findIndex((item) => item.concorso === concorsoMatch[1]);
+    if (index >= 0) {
+      estrazioneSelect.value = String(index);
+      return;
+    }
+  }
+
+  const dateMatch = clean.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+  if (dateMatch) {
+    let [, day, month, year] = dateMatch;
+    if (year.length === 2) year = `20${year}`;
+    const iso = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const index = ultimeEstrazioni.findIndex((item) => item.data === iso);
+    if (index >= 0) estrazioneSelect.value = String(index);
+  }
+}
+
+function parseRuoteFromText(text) {
+  const clean = normalizeText(text).toLowerCase();
+  const found = [];
+
+  if (/\btutte\b/.test(clean)) return ["Tutte"];
+
+  for (const ruota of RUOTE) {
+    if (clean.includes(ruota.toLowerCase()) && !found.includes(ruota)) found.push(ruota);
+  }
+
+  return found;
+}
+
+function parseAmountsFromText(text) {
+  const clean = normalizeText(text).toLowerCase();
+  const result = {
+    estratto: null,
+    ambo: null,
+    terno: null,
+    quaterna: null,
+    cinquina: null
+  };
+
+  const patterns = {
+    estratto: [
+      /estratto\s*[:\-]?\s*(\d+(?:[\.,]\d{1,2})?)/i,
+      /(\d+(?:[\.,]\d{1,2})?)\s*(?:e|euro)?\s*estratto/i
+    ],
+    ambo: [
+      /ambo\s*[:\-]?\s*(\d+(?:[\.,]\d{1,2})?)/i,
+      /(\d+(?:[\.,]\d{1,2})?)\s*(?:e|euro)?\s*ambo/i
+    ],
+    terno: [
+      /terno\s*[:\-]?\s*(\d+(?:[\.,]\d{1,2})?)/i,
+      /(\d+(?:[\.,]\d{1,2})?)\s*(?:e|euro)?\s*terno/i
+    ],
+    quaterna: [
+      /quaterna\s*[:\-]?\s*(\d+(?:[\.,]\d{1,2})?)/i,
+      /(\d+(?:[\.,]\d{1,2})?)\s*(?:e|euro)?\s*quaterna/i
+    ],
+    cinquina: [
+      /cinquina\s*[:\-]?\s*(\d+(?:[\.,]\d{1,2})?)/i,
+      /(\d+(?:[\.,]\d{1,2})?)\s*(?:e|euro)?\s*cinquina/i
+    ]
+  };
+
+  for (const [key, regexes] of Object.entries(patterns)) {
+    for (const regex of regexes) {
+      const match = clean.match(regex);
+      if (match) {
+        result[key] = Number(match[1].replace(",", "."));
+        break;
+      }
+    }
+  }
+
+  return result;
+}
+
+function parseGameModeFromText(text, numeri) {
+  const clean = normalizeText(text).toLowerCase();
+
+  if (/lotto\s*piu/.test(clean) || /lottopiu/.test(clean)) {
+    if (/\b5\s*e\b|\b5\s*euro\b|\b5€\b/.test(clean) || numeri.length === 5) return "lotto-piu-5";
+    if (/\b4\s*e\b|\b4\s*euro\b|\b4€\b/.test(clean) || numeri.length === 4) return "lotto-piu-4";
+    return "lotto-piu-3";
+  }
+
+  return "base";
+}
+
+function parseNumeroOroFromText(text) {
+  return /numero\s*oro|n\.?\s*oro|opzione\s*oro/i.test(String(text || ""));
+}
+
+function setAmounts(amounts) {
+  amountInputs.estratto.value = amounts.estratto ?? "";
+  amountInputs.ambo.value = amounts.ambo ?? "";
+  amountInputs.terno.value = amounts.terno ?? "";
+  amountInputs.quaterna.value = amounts.quaterna ?? "";
+  amountInputs.cinquina.value = amounts.cinquina ?? "";
+}
+
+function getAmounts() {
+  return {
+    estratto: Number(amountInputs.estratto.value || 0),
+    ambo: Number(amountInputs.ambo.value || 0),
+    terno: Number(amountInputs.terno.value || 0),
+    quaterna: Number(amountInputs.quaterna.value || 0),
+    cinquina: Number(amountInputs.cinquina.value || 0)
+  };
+}
+
+function updateHints(items = []) {
+  ocrHints.innerHTML = items.length
+    ? items.map((item) => `<span class="hint-pill">${item}</span>`).join("")
+    : "";
+}
+
+function applyParsedData(text) {
+  const ruote = parseRuoteFromText(text);
+  const numeri = parseNumbers(text);
+  const amounts = parseAmountsFromText(text);
+  const mode = parseGameModeFromText(text, numeri);
+  const hasOro = parseNumeroOroFromText(text);
+  const meta = extractTicketMeta(text);
+
+  applyDetectedEstrazione(text);
+  fillTicketMetaFields(meta);
+  if (ruote.length) setSelectedRuote(ruote);
+  if (numeri.length) numeriGiocatiInput.value = numeri.join(" ");
+
+  setCurrentMode(mode);
+  if (mode === "base") {
+    setAmounts(amounts);
+    numeroOroInput.checked = hasOro;
+  } else {
+    numeroOroInput.checked = false;
+  }
+
+  applyModeBehavior();
+
+  const hints = [];
+  if (ruote.length) hints.push(`Ruote trovate: ${ruote.join(", ")}`);
+  if (numeri.length) hints.push(`Numeri trovati: ${numeri.map(formatNumero).join(" - ")}`);
+  hints.push(`Modalità: ${mode === "base" ? "Lotto base" : LOTTO_PIU_CONFIG[mode]?.label || mode}`);
+  if (hasOro) hints.push("Numero Oro rilevato nel testo");
+  if (meta.serial) hints.push(`Codice schedina: ${meta.serial}`);
+  if (meta.date) hints.push(`Data schedina: ${meta.date}`);
+  updateHints(hints);
+
+  return { ruote, numeri, amounts, mode, hasOro, meta };
+}
+
+function applyModeBehavior() {
+  const mode = getCurrentMode();
+  const isBase = mode === "base";
+  const config = LOTTO_PIU_CONFIG[mode];
+
+  if (isBase) {
+    Object.values(amountInputs).forEach((input) => {
+      input.readOnly = false;
+      input.classList.remove("input-locked");
+    });
+    numeroOroInput.disabled = false;
+    gameModeHint.textContent = numeroOroInput.checked
+      ? "Numero Oro attivo: valido solo su ambo, terno e quaterna."
+      : "Lotto base con importi liberi.";
+    return;
+  }
+
+  const stakes = config.stakes;
+  setAmounts(stakes);
+  Object.entries(amountInputs).forEach(([key, input]) => {
+    input.readOnly = true;
+    input.classList.add("input-locked");
+    input.value = stakes[key] || "";
+  });
+
+  numeroOroInput.checked = false;
+  numeroOroInput.disabled = true;
+  gameModeHint.textContent = `${config.label}: ${config.expectedNumbers} numeri obbligatori e importi fissi già impostati.`;
+}
+
+async function startCamera() {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    statoOCR.textContent = "La fotocamera non è supportata in questo browser.";
+    return;
+  }
+
+  stopCamera();
+
+  try {
+    const facingMode = isLikelyMobile() ? { ideal: "environment" } : { ideal: "user" };
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode,
+        width: { ideal: 1600 },
+        height: { ideal: 900 }
+      },
+      audio: false
+    });
+
+    cameraPreview.srcObject = cameraStream;
+    await cameraPreview.play();
+    avviaCameraBtn.disabled = true;
+    leggiQrCameraBtn.disabled = false;
+    scattaFotoBtn.disabled = false;
+    fermaCameraBtn.disabled = false;
+    statoOCR.textContent = "Fotocamera pronta. Inquadra bene la schedina e usa “Leggi QR” oppure “Scatta e leggi”.";
+  } catch (error) {
+    statoOCR.textContent = `Impossibile aprire la fotocamera: ${error.message}`;
+  }
+}
+
+function stopCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach((track) => track.stop());
+    cameraStream = null;
+  }
+  cameraPreview.srcObject = null;
+  avviaCameraBtn.disabled = false;
+  leggiQrCameraBtn.disabled = true;
+  scattaFotoBtn.disabled = true;
+  fermaCameraBtn.disabled = true;
+}
+
+function captureCameraFrame() {
+  if (!cameraPreview.videoWidth || !cameraPreview.videoHeight) return null;
+  cameraCanvas.width = cameraPreview.videoWidth;
+  cameraCanvas.height = cameraPreview.videoHeight;
+  const ctx = cameraCanvas.getContext("2d");
+  ctx.drawImage(cameraPreview, 0, 0, cameraCanvas.width, cameraCanvas.height);
+  capturedImageDataUrl = cameraCanvas.toDataURL("image/png");
+  return capturedImageDataUrl;
+}
+
+function loadFileAsDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("Impossibile leggere il file"));
+    reader.readAsDataURL(file);
+  });
+}
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("Impossibile caricare l'immagine"));
+    img.src = src;
+  });
+}
+
+async function preprocessImage(imageSrc) {
+  const img = await loadImage(imageSrc);
+  const canvas = document.createElement("canvas");
+  const maxWidth = 1800;
+  const scale = Math.min(1, maxWidth / img.width);
+  canvas.width = Math.max(1, Math.round(img.width * scale));
+  canvas.height = Math.max(1, Math.round(img.height * scale));
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
+
+  for (let i = 0; i < data.length; i += 4) {
+    const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+    const normalized = avg > 165 ? 255 : avg < 95 ? 0 : Math.min(255, Math.max(0, (avg - 110) * 3));
+    data[i] = normalized;
+    data[i + 1] = normalized;
+    data[i + 2] = normalized;
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+  return canvas.toDataURL("image/png");
+}
+
+async function runOCR(imageSrc, options = {}) {
+  if (!imageSrc) {
+    statoOCR.textContent = "Seleziona o cattura prima un'immagine.";
+    return;
+  }
+
+  if (!window.Tesseract) {
+    statoOCR.textContent = "OCR non disponibile in questo browser.";
+    return;
+  }
+
+  statoOCR.textContent = "Lettura in corso...";
+
+  try {
+    const preparedImage = usaContrastoAlto.checked ? await preprocessImage(imageSrc) : imageSrc;
+    setPreviewImage(preparedImage);
+
+    const result = await window.Tesseract.recognize(preparedImage, "ita+eng", {
+      logger: (message) => {
+        if (message.status === "recognizing text") {
+          const percent = Math.round((message.progress || 0) * 100);
+          statoOCR.textContent = `Lettura in corso... ${percent}%`;
+        }
+      }
+    });
+
+    const text = (result?.data?.text || "").trim();
+    testoSchedina.value = text;
+    if (text) applyParsedData(text);
+    statoOCR.textContent = text
+      ? (options.qrAttempted ? "QR analizzato. Ho completato i dati con OCR: controlla i campi qui sotto." : "Testo riconosciuto. Controlla i campi qui sotto.")
+      : "Nessun testo riconosciuto.";
+  } catch (error) {
+    statoOCR.textContent = `Errore durante la lettura: ${error.message}`;
+  }
+}
+
+function getPlayedNumbers() {
+  const numeri = (numeriGiocatiInput.value.match(/\b(?:[1-9]|[1-8]\d|90)\b/g) || []).map(Number);
+  return [...new Set(numeri)].slice(0, 10);
+}
+
+function validateGameSetup(estrazione, ruoteSelezionate, numeriGiocati, amounts) {
+  const mode = getCurrentMode();
+  const numeroGiocatiCount = numeriGiocati.length;
+
+  if (!estrazione) throw new Error("Nessuna estrazione disponibile");
+  if (!ruoteSelezionate.length) throw new Error("Seleziona almeno una ruota");
+  if (!numeroGiocatiCount) throw new Error("Inserisci da 1 a 10 numeri giocati");
+
+  if (mode === "base") {
+    const sortsAttive = Object.entries(amounts).filter(([, value]) => value > 0);
+    if (!sortsAttive.length) throw new Error("Inserisci almeno un importo di giocata");
+    if (!PREMI_PER_EURO[numeroGiocatiCount]) throw new Error("Puoi verificare da 1 a 10 numeri giocati");
+
+    if (numeroOroInput.checked) {
+      if (amounts.estratto > 0 || amounts.cinquina > 0) {
+        throw new Error("Con Numero Oro puoi verificare solo ambo, terno e quaterna.");
+      }
+      if (!(amounts.ambo > 0 || amounts.terno > 0 || amounts.quaterna > 0)) {
+        throw new Error("Attiva almeno una tra ambo, terno o quaterna per usare Numero Oro.");
+      }
+      if (numeroGiocatiCount < 2) {
+        throw new Error("Per Numero Oro servono almeno 2 numeri giocati.");
+      }
+    }
+
+    return;
+  }
+
+  const config = LOTTO_PIU_CONFIG[mode];
+  if (!config) throw new Error("Modalità di gioco non riconosciuta.");
+  if (numeroGiocatiCount !== config.expectedNumbers) {
+    throw new Error(`${config.label} richiede esattamente ${config.expectedNumbers} numeri giocati.`);
+  }
+}
+
+function computeBaseOrOroWinnings(estrazione, ruoteSelezionate, numeriGiocati, amounts) {
+  const numeroGiocatiCount = numeriGiocati.length;
+  const rates = PREMI_PER_EURO[numeroGiocatiCount];
+  const oroRates = NUMERO_ORO_RATES[numeroGiocatiCount] || {};
+  const usaTutte = ruoteSelezionate.includes("Tutte");
+  const ruoteDaControllare = usaTutte ? RUOTE_TUTTE : ruoteSelezionate;
+  const factor = usaTutte ? 0.1 : 1;
+
+  const dettaglioRuote = [];
+  let totale = 0;
+
+  for (const ruota of ruoteDaControllare) {
+    const estratti = estrazione.ruote?.[ruota] || [];
+    const numeroOroRuota = estratti[4] ?? null;
+    const colpiti = numeriGiocati.filter((numero) => estratti.includes(numero));
+    const oroColpito = numeroOroInput.checked && numeroOroRuota != null && numeriGiocati.includes(numeroOroRuota);
+    const vincite = [];
+
+    for (const [sorte, importo] of Object.entries(amounts)) {
+      if (importo <= 0) continue;
+      const size = SIZES[sorte];
+      const baseRate = rates?.[sorte];
+      if (!baseRate) continue;
+
+      const totalWinningCombos = sorte === "estratto" ? colpiti.length : nCr(colpiti.length, size);
+
+      if (!numeroOroInput.checked || !(sorte in oroRates)) {
+        if (totalWinningCombos > 0) {
+          const premio = importo * baseRate * totalWinningCombos * factor;
+          totale += premio;
+          vincite.push({ tipo: "base", sorte, combinazioniVincenti: totalWinningCombos, premio });
+        }
+        continue;
+      }
+
+      const oroInfo = oroRates[sorte];
+      const combosWithOro = oroColpito && colpiti.length >= size ? nCr(colpiti.length - 1, size - 1) : 0;
+      const baseOnlyCombos = Math.max(0, totalWinningCombos - combosWithOro);
+
+      if (baseOnlyCombos > 0) {
+        const premio = importo * baseRate * baseOnlyCombos * factor;
+        totale += premio;
+        vincite.push({ tipo: "base", sorte, combinazioniVincenti: baseOnlyCombos, premio });
+      }
+
+      if (combosWithOro > 0) {
+        const premio = importo * oroInfo.withOro * combosWithOro * factor;
+        totale += premio;
+        vincite.push({ tipo: "numero-oro", sorte, combinazioniVincenti: combosWithOro, premio });
+      } else if (oroColpito) {
+        const premio = importo * oroInfo.soloOro * factor;
+        totale += premio;
+        vincite.push({ tipo: "solo-oro", sorte, combinazioniVincenti: 1, premio });
+      }
+    }
+
+    dettaglioRuote.push({
+      ruota,
+      estratti,
+      numeroOroRuota,
+      colpiti,
+      oroColpito,
+      vincite
+    });
+  }
+
+  return { dettaglioRuote, totale, usaTutte };
+}
+
+function computeLottoPiuWinnings(estrazione, ruoteSelezionate, numeriGiocati) {
+  const mode = getCurrentMode();
+  const config = LOTTO_PIU_CONFIG[mode];
+  const usaTutte = ruoteSelezionate.includes("Tutte");
+  const ruoteDaControllare = usaTutte ? RUOTE_TUTTE : ruoteSelezionate;
+  const factor = usaTutte ? 0.1 : 1;
+
+  const dettaglioRuote = [];
+  let totale = 0;
+
+  for (const ruota of ruoteDaControllare) {
+    const estratti = estrazione.ruote?.[ruota] || [];
+    const colpiti = numeriGiocati.filter((numero) => estratti.includes(numero));
+    const vincite = [];
+
+    for (const [sorte, payoutPerCombo] of Object.entries(config.payoutPerCombo)) {
+      const size = SIZES[sorte];
+      const combinazioniVincenti = nCr(colpiti.length, size);
+      if (!combinazioniVincenti) continue;
+      const premio = payoutPerCombo * combinazioniVincenti * factor;
+      totale += premio;
+      vincite.push({ tipo: "lotto-piu", sorte, combinazioniVincenti, premio });
+    }
+
+    dettaglioRuote.push({
+      ruota,
+      estratti,
+      numeroOroRuota: estratti[4] ?? null,
+      colpiti,
+      oroColpito: false,
+      vincite
+    });
+  }
+
+  return { dettaglioRuote, totale, usaTutte };
+}
+
+function computeWinnings() {
+  const estrazione = getCurrentEstrazione();
+  const ruoteSelezionate = getSelectedRuote();
+  const numeriGiocati = getPlayedNumbers();
+  const amounts = getAmounts();
+  const mode = getCurrentMode();
+
+  validateGameSetup(estrazione, ruoteSelezionate, numeriGiocati, amounts);
+
+  const result = mode === "base"
+    ? computeBaseOrOroWinnings(estrazione, ruoteSelezionate, numeriGiocati, amounts)
+    : computeLottoPiuWinnings(estrazione, ruoteSelezionate, numeriGiocati);
+
+  return {
+    estrazione,
+    numeriGiocati,
+    ruoteSelezionate,
+    amounts,
+    mode,
+    numeroOro: numeroOroInput.checked,
+    ...result
+  };
+}
+
+function renderWinningTag(vincita) {
+  const labels = {
+    base: "Lotto base",
+    "numero-oro": "Sorte con Numero Oro",
+    "solo-oro": "Solo Numero Oro",
+    "lotto-piu": "Lotto Più"
+  };
+
+  return `
+    <div class="winning-row ${vincita.tipo}">
+      <span>
+        <strong>${vincita.sorte}</strong>
+        <small>${labels[vincita.tipo]} · combinazioni: ${vincita.combinazioniVincenti}</small>
+      </span>
+      <span>${formatEuro(vincita.premio)}</span>
+    </div>
+  `;
+}
+
+function renderSummaryBadges(result) {
+  const modeLabel = result.mode === "base" ? "Lotto base" : LOTTO_PIU_CONFIG[result.mode]?.label;
+  const badges = [
+    `<span class="badge">${modeLabel}</span>`,
+    `<span class="badge">${result.numeriGiocati.length} numeri</span>`,
+    `<span class="badge">${result.ruoteSelezionate.join(", ")}</span>`
+  ];
+
+  if (result.numeroOro) badges.push('<span class="badge badge-gold">Numero Oro attivo</span>');
+  return badges.join("");
+}
+
+function renderResult(result) {
+  const hasWin = result.totale > 0;
+  const summaryCard = `
+    <div class="card result-hero ${hasWin ? "success-card" : "neutral-card"}">
+      <div class="result-hero-top">
+        <div>
+          <h2>${hasWin ? "Schedina vincente" : "Nessuna vincita trovata"}</h2>
+          <p><strong>Estrazione:</strong> ${result.estrazione.dataTesto} · Concorso ${result.estrazione.concorso}</p>
+          <p><strong>Numeri giocati:</strong> ${result.numeriGiocati.map(formatNumero).join(" - ")}</p>
+        </div>
+        <div class="result-amount-box">
+          <span class="muted">Totale stimato</span>
+          <strong class="result-amount">${formatEuro(result.totale)}</strong>
+        </div>
+      </div>
+      <div class="badges">${renderSummaryBadges(result)}</div>
+    </div>
+  `;
+
+  const details = result.dettaglioRuote.map((item) => {
+    const wheelClass = item.vincite.length ? "wheel-win-card" : "wheel-empty-card";
+    return `
+      <div class="card ${wheelClass}">
+        <div class="wheel-header-row">
+          <div>
+            <h3>${item.ruota}</h3>
+            <p><strong>Estratti:</strong> ${item.estratti.map(formatNumero).join(" - ")}</p>
+          </div>
+          <div class="wheel-side-info">
+            <span><strong>Numero Oro:</strong> ${item.numeroOroRuota != null ? formatNumero(item.numeroOroRuota) : "-"}</span>
+            <span><strong>Colpiti:</strong> ${item.colpiti.length ? item.colpiti.map(formatNumero).join(" - ") : "nessuno"}</span>
+          </div>
+        </div>
+        ${item.vincite.length ? item.vincite.map(renderWinningTag).join("") : '<p class="muted">Nessuna vincita su questa ruota.</p>'}
+      </div>
+    `;
+  }).join("");
+
+  const modeNote = result.mode === "base"
+    ? `<div class="card note"><strong>Nota:</strong> importi stimati al lordo delle ritenute. Con Numero Oro il calcolo separa il premio base, il premio “sorte con Numero Oro” e il premio “solo Numero Oro”.</div>`
+    : `<div class="card note"><strong>Nota:</strong> il controllo usa la configurazione fissa di ${LOTTO_PIU_CONFIG[result.mode].label} e divide per 10 le eventuali vincite sulla ruota “Tutte”.</div>`;
+
+  risultatoVerifica.innerHTML = summaryCard + modeNote + details;
+}
+
+avviaCameraBtn?.addEventListener("click", startCamera);
+fermaCameraBtn?.addEventListener("click", () => {
+  stopCamera();
+  statoOCR.textContent = "Fotocamera chiusa.";
+});
+leggiQrCameraBtn?.addEventListener("click", async () => {
+  if (!cameraStream) {
+    await startCamera();
+    if (!cameraStream) return;
+    statoOCR.textContent = "Fotocamera pronta. Premi di nuovo “Leggi QR”.";
+    return;
+  }
+
+  const imageSrc = captureCameraFrame();
+  if (!imageSrc) {
+    updateQrStatus("Impossibile catturare il fotogramma della fotocamera.", "warn");
+    return;
+  }
+
+  setPreviewImage(imageSrc);
+  updateQrStatus("Cerco il QR nella fotocamera...", "info");
+  const qrPayload = await scanQRCodeFromImageSrc(imageSrc);
+  if (qrPayload) {
+    applyQrPayload(qrPayload);
+    statoOCR.textContent = "QR letto dalla fotocamera. Controlla i campi compilati.";
+  } else {
+    updateQrStatus("Nessun QR letto dal fotogramma corrente.", "warn");
+  }
+});
+scattaFotoBtn?.addEventListener("click", async () => {
+  const imageSrc = captureCameraFrame();
+  if (imageSrc) await processTicketImage(imageSrc);
+});
+leggiQrImmagineBtn?.addEventListener("click", async () => {
+  const file = fileInput.files?.[0];
+  if (!file) {
+    updateQrStatus("Seleziona prima un'immagine.", "warn");
+    return;
+  }
+  const imageSrc = await loadFileAsDataURL(file);
+  capturedImageDataUrl = imageSrc;
+  setPreviewImage(imageSrc);
+  updateQrStatus("Cerco il QR nell'immagine...", "info");
+  const qrPayload = await scanQRCodeFromImageSrc(imageSrc);
+  if (qrPayload) {
+    applyQrPayload(qrPayload);
+    statoOCR.textContent = "QR letto dall'immagine. Controlla i campi compilati.";
+  } else {
+    updateQrStatus("Nessun QR trovato nell'immagine selezionata.", "warn");
+  }
+});
+leggiImmagineBtn?.addEventListener("click", async () => {
+  const file = fileInput.files?.[0];
+  if (!file) {
+    statoOCR.textContent = "Seleziona prima un'immagine.";
+    return;
+  }
+  const imageSrc = await loadFileAsDataURL(file);
+  await processTicketImage(imageSrc);
+});
+analizzaCodiceBtn?.addEventListener("click", () => {
+  const payload = qrPayloadInput.value.trim();
+  if (!payload) {
+    updateQrStatus("Incolla prima il contenuto del QR o leggilo dalla fotocamera.", "warn");
+    return;
+  }
+  applyQrPayload(payload);
+  statoOCR.textContent = "Codice analizzato. Controlla i campi compilati.";
+});
+analizzaTestoBtn?.addEventListener("click", () => {
+  const text = testoSchedina.value.trim();
+  if (!text) {
+    statoOCR.textContent = "Inserisci prima il testo della schedina.";
+    return;
+  }
+  applyParsedData(text);
+  statoOCR.textContent = "Testo analizzato. Controlla e correggi i campi se serve.";
+});
+pulisciTestoBtn?.addEventListener("click", () => {
+  testoSchedina.value = "";
+  qrPayloadInput.value = "";
+  serialeSchedinaInput.value = "";
+  dataSchedinaInput.value = "";
+  statoOCR.textContent = "";
+  updateQrStatus("");
+  updateHints([]);
+});
+verificaSchedinaBtn?.addEventListener("click", () => {
+  try {
+    renderResult(computeWinnings());
+  } catch (error) {
+    risultatoVerifica.innerHTML = `<div class="card"><strong>Errore:</strong> ${escapeHtml(error.message)}</div>`;
+  }
+});
+
+modeInputs.forEach((input) => input.addEventListener("change", () => {
+  updateModeCards();
+  applyModeBehavior();
+}));
+numeroOroInput?.addEventListener("change", applyModeBehavior);
+window.addEventListener("beforeunload", stopCamera);
+
+createWheelCheckboxes();
+updateModeCards();
+applyModeBehavior();
+caricaEstrazioni().catch((error) => {
+  risultatoVerifica.innerHTML = `<div class="card"><strong>Errore:</strong> ${escapeHtml(error.message)}</div>`;
+});

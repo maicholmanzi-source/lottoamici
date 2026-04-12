@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Metodo Venere</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="hero">
+    <nav class="nav">
+      <a href="/">Home</a>
+      <a href="/schedine-pronte.html">Schedine pronte</a>
+      <a href="/giocate.html">Giocate</a>
+      <a href="/verifica-schedina.html">Verifica schedina</a>
+      <a href="/metodi.html" class="active">Metodi</a>
+      <a href="/fai-3-fai-4.html">Fai 3 Fai 4</a>
+    </nav>
+
+    <h1>Metodo Venere</h1>
+    <p>Versione automatizzata su Venezia-Roma</p>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Regola applicata</h2>
+      <p>
+        Questa versione usa sempre l’ultima estrazione e confronta Venezia e Roma
+        numero per numero nella stessa posizione.
+      </p>
+      <p>
+        Per ogni posizione calcola 2 capogiochi e 2 abbinamenti, da usare sulla ruota di Venezia.
+      </p>
+      <p class="note">
+        Questa è una versione dichiarata del Metodo Venere, costruita sui pochi elementi pubblici verificabili.
+      </p>
+    </section>
+
+    <section class="controls">
+      <button id="aggiorna">Aggiorna previsioni</button>
+    </section>
+
+    <section id="riepilogo" class="card">
+      Caricamento...
+    </section>
+
+    <section>
+      <h2>Previsioni</h2>
+      <div id="listaVenere" class="cards"></div>
+    </section>
+  </main>
+
+  <script src="auth.js"></script>
+  <script src="metodo-venere.js"></script>
+</body>
+</html>

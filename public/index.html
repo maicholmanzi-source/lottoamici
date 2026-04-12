@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ultime 10 estrazioni Lotto</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="home-page">
+  <header class="hero home-hero">
+    <nav class="nav">
+      <a href="/" class="active">Home</a>
+      <a href="/schedine-pronte.html">Schedine pronte</a>
+      <a href="/giocate.html">Giocate</a>
+      <a href="/verifica-schedina.html">Verifica schedina / QR</a>
+      <a href="/metodi.html">Metodi</a>
+      <a href="/fai-3-fai-4.html">Fai 3 Fai 4</a>
+    </nav>
+
+    <h1>Ultime 10 estrazioni del Lotto</h1>
+    <p>Dati aggiornati in automatico</p>
+    <div id="homeAccessActions" class="hero-actions home-access-actions"></div>
+  </header>
+
+  <main class="container">
+    <section id="homeChatSection" class="card home-chat-card" hidden>
+      <div class="section-title-row home-chat-heading">
+        <div>
+          <h2>Chat dei registrati</h2>
+          <p class="muted">Messaggi visibili solo agli utenti approvati. Ogni messaggio si auto-cancella dopo 24 ore.</p>
+        </div>
+        <span class="chat-live-chip">Live 24h</span>
+      </div>
+      <form id="homeChatForm" class="home-chat-form">
+        <label for="homeChatInput" class="sr-only">Scrivi un messaggio</label>
+        <textarea id="homeChatInput" name="message" maxlength="280" rows="2" placeholder="Scrivi un messaggio veloce alla community..."></textarea>
+        <div class="home-chat-form-actions">
+          <small id="homeChatCount" class="muted">0 / 280</small>
+          <button type="submit" class="method-button">Invia</button>
+        </div>
+      </form>
+      <p id="homeChatFeedback" class="muted"></p>
+      <div id="homeChatList" class="home-chat-list">
+        <div class="card subtle-card">Caricamento chat...</div>
+      </div>
+    </section>
+
+    <section class="card home-highlight-card">
+      <div class="section-title-row">
+        <div>
+          <h2>Metodi top del momento</h2>
+          <p class="muted">Confronto rapido tra il miglior metodo del mese corrente e quello del mese scorso.</p>
+        </div>
+      </div>
+      <div id="bestMethodsMonthly" class="cards featured-methods-grid">
+        <div class="card">Caricamento metodi migliori...</div>
+      </div>
+    </section>
+
+    <section id="homeControls" class="controls card controls-card">
+      <label for="ruota">Filtra per ruota:</label>
+      <select id="ruota">
+        <option value="">Tutte le ruote</option>
+        <option value="Bari">Bari</option>
+        <option value="Cagliari">Cagliari</option>
+        <option value="Firenze">Firenze</option>
+        <option value="Genova">Genova</option>
+        <option value="Milano">Milano</option>
+        <option value="Napoli">Napoli</option>
+        <option value="Palermo">Palermo</option>
+        <option value="Roma">Roma</option>
+        <option value="Torino">Torino</option>
+        <option value="Venezia">Venezia</option>
+        <option value="Nazionale">Nazionale</option>
+      </select>
+
+      <button id="ricarica" type="button">Aggiorna</button>
+    </section>
+
+    <section>
+      <div class="section-title-row">
+        <div>
+          <h2>Risultati</h2>
+          <p id="homeVisibilityNote" class="muted">Le ultime 10 estrazioni complete del Lotto.</p>
+        </div>
+        <div id="resultsActions" class="hero-actions">
+          <a class="method-button" href="/schedine-pronte.html">Schedine pronte</a>
+          <a class="method-button secondary-button" href="/giocate.html">Vai alle giocate</a>
+          <a class="method-button secondary-button" href="/verifica-schedina.html">Verifica schedina / QR</a>
+        </div>
+      </div>
+      <div id="listaEstrazioni" class="cards"></div>
+    </section>
+  </main>
+
+  <script src="auth.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

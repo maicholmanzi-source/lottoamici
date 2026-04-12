@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Metodo Monco</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="hero">
+    <nav class="nav">
+      <a href="/">Home</a>
+      <a href="/schedine-pronte.html">Schedine pronte</a>
+      <a href="/giocate.html">Giocate</a>
+      <a href="/verifica-schedina.html">Verifica schedina</a>
+      <a href="/metodi.html" class="active">Metodi</a>
+      <a href="/fai-3-fai-4.html">Fai 3 Fai 4</a>
+    </nav>
+
+    <h1>Metodo del Monco</h1>
+    <p>Previsioni automatiche basate sui numeri isotopi delle ruote consecutive</p>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Regola applicata</h2>
+      <p>
+        La pagina cerca, per ogni coppia di ruote consecutive, l’estrazione più recente
+        in cui compare un numero isotopo: lo stesso numero nella stessa posizione
+        su entrambe le ruote.
+      </p>
+      <p>
+        Da quel numero ricava 2 ambate e gli abbinamenti usando la tabella del Monco.
+      </p>
+      <p class="note">
+        È uno strumento di calcolo tradizionale. Non garantisce vincite.
+      </p>
+    </section>
+
+    <section class="controls">
+      <button id="aggiorna">Aggiorna previsioni</button>
+    </section>
+
+    <section id="riepilogo" class="card">
+      Caricamento...
+    </section>
+
+    <section>
+      <h2>Previsioni per coppia</h2>
+      <div id="listaMonco" class="cards"></div>
+    </section>
+  </main>
+
+  <script src="auth.js"></script>
+  <script src="metodo-monco.js"></script>
+</body>
+</html>

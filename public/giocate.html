@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Giocate secondo i metodi</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="hero">
+    <nav class="nav">
+      <a href="/">Home</a>
+      <a href="/schedine-pronte.html">Schedine pronte</a>
+      <a href="/giocate.html" class="active">Giocate</a>
+      <a href="/verifica-schedina.html">Verifica schedina</a>
+      <a href="/metodi.html">Metodi</a>
+      <a href="/fai-3-fai-4.html">Fai 3 Fai 4</a>
+    </nav>
+
+    <h1>Giocate secondo i metodi</h1>
+    <p>Riepilogo automatico delle giocate attive con controllo esiti e colpi di gioco</p>
+    <p id="esitoUltimaEstrazione" class="muted">Verifica risultati in caricamento...</p>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <div class="home-box-header">
+        <div>
+          <h2>Giocate attive</h2>
+          <p class="muted">
+            Qui trovi solo le giocate generate dai metodi, con stato reale: presa, in corso o scaduta in base ai colpi di gioco.
+          </p>
+        </div>
+        <button id="aggiornaMetodi" type="button">Aggiorna giocate</button>
+      </div>
+
+      <div id="giocateMetodi" class="cards">
+        <div class="card">Caricamento giocate...</div>
+      </div>
+    </section>
+  </main>
+
+  <script src="auth.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

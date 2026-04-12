@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Metodo dell'Oca</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="hero">
+    <nav class="nav">
+      <a href="/">Home</a>
+      <a href="/schedine-pronte.html">Schedine pronte</a>
+      <a href="/giocate.html">Giocate</a>
+      <a href="/verifica-schedina.html">Verifica schedina</a>
+      <a href="/metodi.html" class="active">Metodi</a>
+      <a href="/fai-3-fai-4.html">Fai 3 Fai 4</a>
+    </nav>
+
+    <h1>Metodo dell'Oca</h1>
+    <p>Capogioco da somma della cinquina con abbinamenti fissi del metodo</p>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Regola applicata</h2>
+      <p>
+        Questa versione automatizzata usa l'ultima estrazione disponibile su ogni ruota.
+      </p>
+      <p>
+        Somma i 5 numeri della cinquina, applica il fuori 90 per ottenere il <strong>capogioco</strong>
+        e poi propone gli abbinamenti fissi del metodo per costruire gli ambi.
+      </p>
+      <p class="note">
+        Nel sito il Metodo dell'Oca è stato reso in modo coerente e dichiarato,
+        così può entrare nelle statistiche, nelle giocate e nelle schedine pronte.
+      </p>
+    </section>
+
+    <section class="controls">
+      <button id="aggiorna">Aggiorna previsioni</button>
+    </section>
+
+    <section id="riepilogo" class="card">
+      Caricamento...
+    </section>
+
+    <section>
+      <h2>Previsioni per ruota</h2>
+      <div id="listaOca" class="cards"></div>
+    </section>
+  </main>
+
+  <script src="auth.js"></script>
+  <script src="metodo-oca.js"></script>
+</body>
+</html>

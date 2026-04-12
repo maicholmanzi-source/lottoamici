@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Verifica schedina Lotto</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="hero">
+    <nav class="nav">
+      <a href="/">Home</a>
+      <a href="/schedine-pronte.html">Schedine pronte</a>
+      <a href="/giocate.html">Giocate</a>
+      <a href="/verifica-schedina.html" class="active">Verifica schedina</a>
+      <a href="/metodi.html">Metodi</a>
+      <a href="/fai-3-fai-4.html">Fai 3 Fai 4</a>
+    </nav>
+
+    <h1>Verifica schedina Lotto</h1>
+    <p>Scansiona la schedina o il suo QR code, correggi i campi se serve e controlla subito vincita e importo stimato.</p>
+  </header>
+
+  <main class="container">
+    <section class="card note">
+      <strong>Versione 3:</strong> prima prova a leggere il <strong>QR code</strong> della schedina, poi completa la verifica con OCR e correzione manuale. Restano supportati <strong>Numero Oro</strong> e <strong>Lotto Più 3€ / 4€ / 5€</strong>.
+    </section>
+
+    <section class="camera-layout">
+      <div class="card">
+        <div class="section-title-row">
+          <div>
+            <h2>Scansione</h2>
+            <p class="muted">Su smartphone prova prima la fotocamera posteriore, su desktop la frontale. I pulsanti di lettura provano il QR prima del testo.</p>
+          </div>
+        </div>
+
+        <div class="camera-actions">
+          <button id="avviaCamera" type="button">Apri fotocamera</button>
+          <button id="leggiQrCamera" type="button" disabled>Leggi QR</button>
+          <button id="scattaFoto" type="button" disabled>Scatta e leggi</button>
+          <button id="fermaCamera" type="button" disabled>Chiudi fotocamera</button>
+        </div>
+
+        <video id="cameraPreview" class="camera-preview" playsinline autoplay muted></video>
+        <canvas id="cameraCanvas" class="hidden"></canvas>
+
+        <div class="divider"><span>oppure</span></div>
+
+        <label class="upload-box" for="immagineSchedina">
+          <strong>Carica foto schedina</strong>
+          <span class="muted">Puoi anche scegliere un'immagine dal telefono o dal PC.</span>
+        </label>
+        <input id="immagineSchedina" type="file" accept="image/*" capture="environment" />
+
+        <div class="ocr-actions">
+          <button id="leggiQrImmagine" type="button">Leggi QR immagine</button>
+          <button id="leggiImmagine" type="button">Leggi immagine caricata</button>
+          <label class="mini-toggle">
+            <input id="usaContrastoAlto" type="checkbox" checked />
+            <span>Migliora contrasto prima dell'OCR</span>
+          </label>
+          <div id="statoOCR" class="muted"></div>
+        </div>
+
+        <div id="previewWrapper" class="image-preview-wrapper hidden">
+          <p class="muted"><strong>Anteprima elaborata</strong></p>
+          <img id="previewImmagine" class="image-preview" alt="Anteprima schedina" />
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Testo schedina</h2>
+        <p class="muted">Se preferisci, incolla direttamente il testo della schedina oppure correggi il testo letto dalla foto.</p>
+        <textarea id="testoSchedina" class="big-textarea" placeholder="Incolla qui il testo della schedina oppure usa la fotocamera..."></textarea>
+        <div class="camera-actions">
+          <button id="analizzaTesto" type="button">Analizza testo</button>
+          <button id="pulisciTesto" type="button" class="secondary-button">Pulisci</button>
+        </div>
+        <div id="ocrHints" class="hint-list"></div>
+      </div>
+    </section>
+
+
+    <section class="card">
+      <div class="section-title-row">
+        <div>
+          <h2>QR e seriale schedina</h2>
+          <p class="muted">Se il QR contiene abbastanza dati, la pagina compila la schedina da sola. Se contiene solo un codice, lo usa come supporto e completa con OCR o correzione manuale.</p>
+        </div>
+      </div>
+
+      <div class="camera-actions">
+        <button id="analizzaCodice" type="button" class="secondary-button">Analizza codice letto</button>
+      </div>
+
+      <div id="statoQR" class="muted"></div>
+
+      <div class="form-grid">
+        <div>
+          <label for="serialeSchedina">Seriale / codice schedina</label>
+          <input id="serialeSchedina" type="text" placeholder="Viene compilato se trovato nel QR o nel testo" />
+        </div>
+        <div>
+          <label for="dataSchedina">Data schedina</label>
+          <input id="dataSchedina" type="text" placeholder="Es. 07/04/2026" />
+        </div>
+      </div>
+
+      <div>
+        <label for="qrPayload">Contenuto QR letto</label>
+        <textarea id="qrPayload" class="big-textarea qr-textarea" placeholder="Qui comparirà il contenuto del QR oppure puoi incollarlo a mano."></textarea>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-title-row">
+        <div>
+          <h2>Tipo di giocata</h2>
+          <p class="muted">Puoi lasciarlo automatico se il testo viene riconosciuto bene, oppure selezionarlo a mano.</p>
+        </div>
+      </div>
+
+      <div class="mode-grid">
+        <label class="mode-card active-mode" data-mode-card>
+          <input type="radio" name="modalitaGioco" value="base" checked />
+          <span>
+            <strong>Lotto base</strong>
+            <small>Importi liberi per estratto, ambo, terno, quaterna e cinquina.</small>
+          </span>
+        </label>
+        <label class="mode-card" data-mode-card>
+          <input type="radio" name="modalitaGioco" value="lotto-piu-3" />
+          <span>
+            <strong>Lotto Più 3€</strong>
+            <small>3 numeri · 2€ ambo · 1€ terno.</small>
+          </span>
+        </label>
+        <label class="mode-card" data-mode-card>
+          <input type="radio" name="modalitaGioco" value="lotto-piu-4" />
+          <span>
+            <strong>Lotto Più 4€</strong>
+            <small>4 numeri · 2€ ambo · 1€ terno · 1€ quaterna.</small>
+          </span>
+        </label>
+        <label class="mode-card" data-mode-card>
+          <input type="radio" name="modalitaGioco" value="lotto-piu-5" />
+          <span>
+            <strong>Lotto Più 5€</strong>
+            <small>5 numeri · 2€ ambo · 1,5€ terno · 1€ quaterna · 0,5€ cinquina.</small>
+          </span>
+        </label>
+      </div>
+
+      <div class="option-row">
+        <label class="toggle-pill">
+          <input id="numeroOro" type="checkbox" />
+          <span>Attiva Numero Oro</span>
+        </label>
+        <div id="gameModeHint" class="muted"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-title-row">
+        <div>
+          <h2>Dati da verificare</h2>
+          <p class="muted">Controlla i campi riconosciuti e correggili se serve.</p>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div>
+          <label for="estrazioneSelect">Estrazione da controllare</label>
+          <select id="estrazioneSelect"></select>
+        </div>
+        <div>
+          <label for="numeriGiocati">Numeri giocati</label>
+          <input id="numeriGiocati" type="text" placeholder="Es. 12 34 56" />
+        </div>
+      </div>
+
+      <div>
+        <p><strong>Ruote</strong></p>
+        <div id="ruoteContainer" class="wheel-grid"></div>
+      </div>
+
+      <div class="stakes-grid">
+        <div class="stake-card">
+          <label for="importoEstratto">Estratto €</label>
+          <input id="importoEstratto" type="number" min="0" step="0.01" placeholder="0" />
+        </div>
+        <div class="stake-card">
+          <label for="importoAmbo">Ambo €</label>
+          <input id="importoAmbo" type="number" min="0" step="0.01" placeholder="0" />
+        </div>
+        <div class="stake-card">
+          <label for="importoTerno">Terno €</label>
+          <input id="importoTerno" type="number" min="0" step="0.01" placeholder="0" />
+        </div>
+        <div class="stake-card">
+          <label for="importoQuaterna">Quaterna €</label>
+          <input id="importoQuaterna" type="number" min="0" step="0.01" placeholder="0" />
+        </div>
+        <div class="stake-card">
+          <label for="importoCinquina">Cinquina €</label>
+          <input id="importoCinquina" type="number" min="0" step="0.01" placeholder="0" />
+        </div>
+      </div>
+
+      <div class="camera-actions">
+        <button id="verificaSchedina" type="button">Verifica vincita</button>
+      </div>
+    </section>
+
+    <section id="risultatoVerifica" class="cards"></section>
+
+    <section class="card note">
+      <strong>Nota importante:</strong> il controllo è pensato per una verifica rapida e comoda. Se la foto è poco leggibile, usa il testo manuale o correggi i campi prima del controllo finale.
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="auth.js"></script>
+  <script src="verifica-schedina.js"></script>
+</body>
+</html>
