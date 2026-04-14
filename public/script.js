@@ -761,7 +761,7 @@ function renderBestMethodCard(title, entry) {
         <div class="mini-stat"><strong>Colpo medio</strong><span>${formatAvgColpo(entry.stats?.averageHitColpo)}</span></div>
       </div>
       <div class="featured-method-footer">
-        <p class="featured-method-note">Periodo analizzato: ${entry.monthLabel}</p>
+        <p class="featured-method-note">Periodo analizzato: ${entry.stats?.periodLabel || entry.monthLabel}${entry.stats?.lastUpdatedText ? ` · aggiornato al ${entry.stats.lastUpdatedText}` : ''}</p>
         <a class="method-button" href="${getAuthStateSnapshot().canAccessProtected ? entry.path : "/login.html"}">${getAuthStateSnapshot().canAccessProtected ? "Apri metodo" : "Accedi per vedere il metodo"}</a>
       </div>
     </article>
@@ -777,20 +777,23 @@ function renderMethodsStats(methods = []) {
   }
 
   const rankedMethods = [...methods].sort((a, b) => {
-    const aReliability = a.stats?.reliability ?? -1;
-    const bReliability = b.stats?.reliability ?? -1;
+    const aStats = a.liveStats || a.stats || {};
+    const bStats = b.liveStats || b.stats || {};
+    const aReliability = aStats.reliability ?? -1;
+    const bReliability = bStats.reliability ?? -1;
     if (bReliability !== aReliability) return bReliability - aReliability;
-    const aHits = a.stats?.exactHits || 0;
-    const bHits = b.stats?.exactHits || 0;
+    const aHits = aStats.exactHits || 0;
+    const bHits = bStats.exactHits || 0;
     if (bHits !== aHits) return bHits - aHits;
-    const aColpo = a.stats?.averageHitColpo ?? 999;
-    const bColpo = b.stats?.averageHitColpo ?? 999;
+    const aColpo = aStats.averageHitColpo ?? 999;
+    const bColpo = bStats.averageHitColpo ?? 999;
     if (aColpo !== bColpo) return aColpo - bColpo;
-    return (b.stats?.completedSignals || 0) - (a.stats?.completedSignals || 0);
+    return (bStats.completedSignals || 0) - (aStats.completedSignals || 0);
   });
 
   methodsStatsGrid.innerHTML = rankedMethods
     .map((method, index) => {
+      const stats = method.liveStats || method.stats || {};
       const podiumClass = index === 0 ? " stats-card--gold" : index === 1 ? " stats-card--silver" : index === 2 ? " stats-card--bronze" : "";
       const podiumLabel = index === 0 ? "1° per affidabilità" : index === 1 ? "2° per affidabilità" : index === 2 ? "3° per affidabilità" : "Storico";
       return `
@@ -804,15 +807,16 @@ function renderMethodsStats(methods = []) {
         </div>
         <p>${method.descrizione || ""}</p>
         <div class="stats-grid">
-          <div class="stat-box"><span>Affidabilità</span><strong>${formatPercent(method.stats?.reliability)}</strong></div>
-          <div class="stat-box"><span>Prese</span><strong>${method.stats?.exactHits || 0}</strong></div>
-          <div class="stat-box"><span>Esaminate</span><strong>${method.stats?.completedSignals || 0}</strong></div>
-          <div class="stat-box"><span>Colpo medio</span><strong>${formatAvgColpo(method.stats?.averageHitColpo)}</strong></div>
+          <div class="stat-box"><span>Affidabilità live</span><strong>${formatPercent(stats.reliability)}</strong></div>
+          <div class="stat-box"><span>Prese nel periodo</span><strong>${stats.exactHits || 0}</strong></div>
+          <div class="stat-box"><span>Esaminate</span><strong>${stats.completedSignals || 0}</strong></div>
+          <div class="stat-box"><span>Colpo medio</span><strong>${formatAvgColpo(stats.averageHitColpo)}</strong></div>
         </div>
         <div class="stats-detail-list">
-          <p><strong>Periodo di esaminazione:</strong> ${formatRangeLabel(method.stats)}</p>
-          <p><strong>Segnali totali:</strong> ${method.stats?.totalSignals || 0}</p>
-          <p><strong>In corso:</strong> ${method.stats?.ongoing || 0} · <strong>Parziali:</strong> ${method.stats?.partial || 0} · <strong>Scaduti/non presi:</strong> ${method.stats?.expired || 0}</p>
+          <p><strong>Periodo di rilevamento:</strong> ${stats.periodLabel || formatRangeLabel(stats)}</p>
+          <p><strong>Ultimo aggiornamento:</strong> ${stats.lastUpdatedText || 'N/D'}</p>
+          <p><strong>Segnali totali nel periodo:</strong> ${stats.totalSignals || 0}</p>
+          <p><strong>Attivi:</strong> ${(stats.ongoing || 0) + (stats.partial || 0)} · <strong>Prese:</strong> ${stats.exactHits || 0} · <strong>Scaduti/non presi:</strong> ${stats.expired || 0}</p>
         </div>
         <a class="method-button" href="${method.path}">Apri ${method.shortName || method.nome}</a>
       </article>
@@ -838,7 +842,7 @@ async function caricaStatisticheMetodi() {
       renderMethodsStats(data.methods || []);
       if (methodsStatsInfo) {
         const updated = data.updatedAt ? `${data.updatedAt.dataTesto} (concorso ${data.updatedAt.concorso})` : "dato non disponibile";
-        methodsStatsInfo.textContent = `Statistiche calcolate sullo storico disponibile e ordinate per affidabilità. Ultima estrazione usata: ${updated}.`;
+        methodsStatsInfo.textContent = `Classifica live del mese corrente aggiornata all'ultima estrazione disponibile. Ultima estrazione usata: ${updated}. I segnali scaduti vengono esclusi dalle sezioni operative.`;
       }
     }
   } catch (error) {

@@ -1528,13 +1528,16 @@ function rankMethodsByReliability(methods = []) {
 
 function getGiocateMetodiConEsiti(estrazioni) {
   const statsPayload = buildMethodStatsPayload(estrazioni);
-  const rankedMethods = rankMethodsByReliability(statsPayload.methods || []);
+  const rankedMethods = rankMethodsByReliability((statsPayload.methods || []).map((method) => ({
+    ...method,
+    stats: method.liveStats || method.stats
+  })));
   const rankMap = new Map(
     rankedMethods.map((method, index) => [
       method.nome,
       {
         rank: index + 1,
-        reliability: method.stats?.reliability ?? null,
+        reliability: method.liveStats?.reliability ?? method.stats?.reliability ?? null,
         ...getPodiumMeta(index)
       }
     ])
@@ -1543,15 +1546,14 @@ function getGiocateMetodiConEsiti(estrazioni) {
   return buildGiocateGroups(estrazioni)
     .map((group) => {
       const rankInfo = rankMap.get(group.nome) || { rank: null, reliability: null, podiumClass: "", podiumLabel: "Storico" };
+      const activeItems = filterOperationalItems(group.items || [], estrazioni);
       return {
         ...group,
         ...rankInfo,
-        items: group.items.map((item) => ({
-          ...item,
-          status: evaluateGiocataItem(item, estrazioni)
-        }))
+        items: activeItems
       };
     })
+    .filter((group) => group.items?.length)
     .sort((a, b) => {
       const aRank = a.rank ?? 999;
       const bRank = b.rank ?? 999;
@@ -1804,6 +1806,63 @@ function getPreviousMonthKey(monthKey) {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
+function getExtractionWindowForMonth(estrazioni, monthKey) {
+  if (!monthKey || !Array.isArray(estrazioni)) {
+    return { periodStart: null, periodEnd: null, updatedAt: null, periodLabel: "Periodo non disponibile" };
+  }
+
+  const windowDraws = estrazioni
+    .filter((item) => getMonthKeyFromDate(item?.data) === monthKey)
+    .sort((a, b) => a.data.localeCompare(b.data));
+
+  if (!windowDraws.length) {
+    return { periodStart: null, periodEnd: null, updatedAt: null, periodLabel: "Periodo non disponibile" };
+  }
+
+  const periodStart = windowDraws[0].data;
+  const periodEnd = windowDraws[windowDraws.length - 1].data;
+
+  return {
+    periodStart,
+    periodEnd,
+    updatedAt: windowDraws[windowDraws.length - 1],
+    periodLabel: `${periodStart} → ${periodEnd}`
+  };
+}
+
+function isExpiredOutcome(status) {
+  return ["expired", "miss"].includes(status?.outcome);
+}
+
+function isOperationalOutcome(status) {
+  return !isExpiredOutcome(status);
+}
+
+function attachStatusesToItems(items = [], estrazioni = []) {
+  return items.map((item) => ({
+    ...item,
+    status: evaluateGiocataItem(item, estrazioni)
+  }));
+}
+
+function filterOperationalItems(items = [], estrazioni = []) {
+  return attachStatusesToItems(items, estrazioni).filter((item) => isOperationalOutcome(item.status));
+}
+
+function hasOperationalSignalsForMethod(estrazioni, methodName) {
+  const group = getGiocateMetodiConEsiti(estrazioni).find((entry) => entry.nome === methodName);
+  return Boolean(group?.items?.length);
+}
+
+function clearMethodPayloadIfExpired(payload = {}) {
+  const cleared = { ...payload };
+  if (Array.isArray(cleared.previsioni)) cleared.previsioni = [];
+  if (Array.isArray(cleared.risultati)) cleared.risultati = [];
+  if (cleared.estrazioneRilevamento) cleared.estrazioneRilevamento = null;
+  cleared.messaggioStato = "Nessun segnale ancora valido: i segnali scaduti sono stati rimossi dalle sezioni operative.";
+  return cleared;
+}
+
 function buildHistoricalMethodSignals(estrazioni) {
   const signals = [];
   const currentMonthKey = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
@@ -2029,7 +2088,7 @@ function buildHistoricalMethodSignals(estrazioni) {
   return signals;
 }
 
-function computeMethodStats(items = [], monthKey = null) {
+function computeMethodStats(items = [], monthKey = null, estrazioni = []) {
   const filtered = monthKey ? items.filter((item) => getMonthKeyFromDate(item.dataSegnale) === monthKey) : items;
   const totalSignals = filtered.length;
   const exactHits = filtered.filter((item) => item.status?.outcome === "hit");
@@ -2042,8 +2101,12 @@ function computeMethodStats(items = [], monthKey = null) {
   const averageHitColpo = exactHits.length
     ? exactHits.reduce((sum, item) => sum + (item.status?.hitColpo || 0), 0) / exactHits.length
     : null;
-  const firstDate = filtered.length ? [...filtered].sort((a, b) => a.dataSegnale.localeCompare(b.dataSegnale))[0].dataSegnale : null;
-  const lastDate = filtered.length ? [...filtered].sort((a, b) => b.dataSegnale.localeCompare(a.dataSegnale))[0].dataSegnale : null;
+  const firstSignalDate = filtered.length ? [...filtered].sort((a, b) => a.dataSegnale.localeCompare(b.dataSegnale))[0].dataSegnale : null;
+  const lastSignalDate = filtered.length ? [...filtered].sort((a, b) => b.dataSegnale.localeCompare(a.dataSegnale))[0].dataSegnale : null;
+  const extractionWindow = monthKey ? getExtractionWindowForMonth(estrazioni, monthKey) : null;
+  const periodStart = extractionWindow?.periodStart || firstSignalDate;
+  const periodEnd = extractionWindow?.periodEnd || lastSignalDate;
+  const updatedAt = extractionWindow?.updatedAt || estrazioni?.[0] || null;
 
   return {
     totalSignals,
@@ -2055,9 +2118,12 @@ function computeMethodStats(items = [], monthKey = null) {
     notVerified,
     reliability,
     averageHitColpo,
-    firstDate,
-    lastDate,
-    periodLabel: firstDate && lastDate ? `${firstDate} → ${lastDate}` : "Periodo non disponibile"
+    firstDate: firstSignalDate,
+    lastDate: lastSignalDate,
+    periodStart,
+    periodEnd,
+    lastUpdatedText: updatedAt?.dataTesto || (periodEnd || null),
+    periodLabel: periodStart && periodEnd ? `${periodStart} → ${periodEnd}` : "Periodo non disponibile"
   };
 }
 
@@ -2073,31 +2139,38 @@ function buildMethodStatsPayload(estrazioni) {
     return acc;
   }, {});
 
+  const currentMonthKey = getMonthKeyFromDate(estrazioni[0]?.data);
+  const previousMonthKey = getPreviousMonthKey(currentMonthKey);
+
   const methods = rankMethodsByReliability(
     Object.entries(METHOD_META).map(([nome, meta]) => {
       const items = grouped[nome] || [];
+      const overallStats = computeMethodStats(items, null, estrazioni);
+      const liveStats = computeMethodStats(items, currentMonthKey, estrazioni);
+      const previousStats = computeMethodStats(items, previousMonthKey, estrazioni);
       return {
         nome,
         ...meta,
-        stats: computeMethodStats(items),
+        stats: overallStats,
+        liveStats,
         monthly: {
-          current: computeMethodStats(items, getMonthKeyFromDate(estrazioni[0]?.data)),
-          previous: computeMethodStats(items, getPreviousMonthKey(getMonthKeyFromDate(estrazioni[0]?.data)))
+          current: liveStats,
+          previous: previousStats
         }
       };
-    })
+    }).map((method) => ({
+      ...method,
+      stats: method.liveStats?.totalSignals || method.liveStats?.ongoing || method.liveStats?.partial ? method.liveStats : method.stats
+    }))
   ).map((method, index) => ({
     ...method,
     rank: index + 1,
     ...getPodiumMeta(index)
   }));
 
-  const currentMonthKey = getMonthKeyFromDate(estrazioni[0]?.data);
-  const previousMonthKey = getPreviousMonthKey(currentMonthKey);
-
   function pickBest(monthKey) {
     const ranked = methods
-      .map((method) => ({ method, stats: computeMethodStats(grouped[method.nome] || [], monthKey) }))
+      .map((method) => ({ method, stats: computeMethodStats(grouped[method.nome] || [], monthKey, estrazioni) }))
       .filter((entry) => entry.stats.totalSignals > 0)
       .sort((a, b) => {
         const aReliability = a.stats.reliability ?? -1;
@@ -3047,7 +3120,8 @@ app.get("/api/ruota/:nome", async (req, res) => {
 app.get("/api/metodo-azzerati", requireApprovedApi, async (req, res) => {
   try {
     const estrazioni = await getAllEstrazioni();
-    res.json(getPrevisioniAzzerati(estrazioni));
+    const payload = getPrevisioniAzzerati(estrazioni);
+    res.json(hasOperationalSignalsForMethod(estrazioni, "Metodo Azzerati") ? payload : clearMethodPayloadIfExpired(payload));
   } catch (error) {
     console.error("Errore metodo azzerati:", error);
     res.status(500).json({ errore: "Impossibile calcolare il metodo azzerati", dettaglio: error.message });
@@ -3057,7 +3131,8 @@ app.get("/api/metodo-azzerati", requireApprovedApi, async (req, res) => {
 app.get("/api/metodo-monco", requireApprovedApi, async (req, res) => {
   try {
     const estrazioni = await getAllEstrazioni();
-    res.json(getPrevisioniMonco(estrazioni));
+    const payload = getPrevisioniMonco(estrazioni);
+    res.json(hasOperationalSignalsForMethod(estrazioni, "Metodo Monco") ? payload : clearMethodPayloadIfExpired(payload));
   } catch (error) {
     console.error("Errore metodo monco:", error);
     res.status(500).json({ errore: "Impossibile calcolare il metodo del monco", dettaglio: error.message });
@@ -3067,7 +3142,8 @@ app.get("/api/metodo-monco", requireApprovedApi, async (req, res) => {
 app.get("/api/metodo-9-90", requireApprovedApi, async (req, res) => {
   try {
     const estrazioni = await getAllEstrazioni();
-    res.json(getPrevisioni990(estrazioni));
+    const payload = getPrevisioni990(estrazioni);
+    res.json(payload);
   } catch (error) {
     console.error("Errore metodo 9 e 90:", error);
     res.status(500).json({ errore: "Impossibile calcolare il metodo 9 e 90", dettaglio: error.message });
@@ -3077,7 +3153,8 @@ app.get("/api/metodo-9-90", requireApprovedApi, async (req, res) => {
 app.get("/api/metodo-isotopi", requireApprovedApi, async (req, res) => {
   try {
     const estrazioni = await getAllEstrazioni();
-    res.json(getPrevisioniIsotopi(estrazioni));
+    const payload = getPrevisioniIsotopi(estrazioni);
+    res.json(hasOperationalSignalsForMethod(estrazioni, "Metodo Isotopi") ? payload : clearMethodPayloadIfExpired(payload));
   } catch (error) {
     console.error("Errore metodo isotopi:", error);
     res.status(500).json({ errore: "Impossibile calcolare il metodo degli isotopi", dettaglio: error.message });
@@ -3087,7 +3164,8 @@ app.get("/api/metodo-isotopi", requireApprovedApi, async (req, res) => {
 app.get("/api/metodo-gemelli", requireApprovedApi, async (req, res) => {
   try {
     const estrazioni = await getAllEstrazioni();
-    res.json(getPrevisioniGemelli(estrazioni));
+    const payload = getPrevisioniGemelli(estrazioni);
+    res.json(hasOperationalSignalsForMethod(estrazioni, "Metodo Gemelli") ? payload : clearMethodPayloadIfExpired(payload));
   } catch (error) {
     console.error("Errore metodo gemelli:", error);
     res.status(500).json({ errore: "Impossibile calcolare il metodo dei gemelli", dettaglio: error.message });
@@ -3097,7 +3175,8 @@ app.get("/api/metodo-gemelli", requireApprovedApi, async (req, res) => {
 app.get("/api/metodo-don-pedro", requireApprovedApi, async (req, res) => {
   try {
     const estrazioni = await getAllEstrazioni();
-    res.json(getPrevisioniDonPedro(estrazioni));
+    const payload = getPrevisioniDonPedro(estrazioni);
+    res.json(hasOperationalSignalsForMethod(estrazioni, "Metodo Don Pedro") ? payload : clearMethodPayloadIfExpired(payload));
   } catch (error) {
     console.error("Errore metodo don pedro:", error);
     res.status(500).json({ errore: "Impossibile calcolare il metodo Don Pedro", dettaglio: error.message });
@@ -3107,7 +3186,8 @@ app.get("/api/metodo-don-pedro", requireApprovedApi, async (req, res) => {
 app.get("/api/metodo-ninja", requireApprovedApi, async (req, res) => {
   try {
     const estrazioni = await getAllEstrazioni();
-    res.json(getPrevisioniNinja(estrazioni));
+    const payload = getPrevisioniNinja(estrazioni);
+    res.json(hasOperationalSignalsForMethod(estrazioni, "Metodo Ninja") ? payload : clearMethodPayloadIfExpired(payload));
   } catch (error) {
     console.error("Errore metodo ninja:", error);
     res.status(500).json({ errore: "Impossibile calcolare il metodo Ninja", dettaglio: error.message });
@@ -3117,7 +3197,8 @@ app.get("/api/metodo-ninja", requireApprovedApi, async (req, res) => {
 app.get("/api/metodo-doppio-30", requireApprovedApi, async (req, res) => {
   try {
     const estrazioni = await getAllEstrazioni();
-    res.json(getPrevisioniDoppio30(estrazioni));
+    const payload = getPrevisioniDoppio30(estrazioni);
+    res.json(hasOperationalSignalsForMethod(estrazioni, "Metodo Doppio 30") ? payload : clearMethodPayloadIfExpired(payload));
   } catch (error) {
     console.error("Errore metodo doppio 30:", error);
     res.status(500).json({ errore: "Impossibile calcolare il metodo Doppio 30", dettaglio: error.message });
@@ -3128,7 +3209,8 @@ app.get("/api/metodo-doppio-30", requireApprovedApi, async (req, res) => {
 app.get("/api/metodo-venere", requireApprovedApi, async (req, res) => {
   try {
     const estrazioni = await getAllEstrazioni();
-    res.json(getPrevisioniVenere(estrazioni));
+    const payload = getPrevisioniVenere(estrazioni);
+    res.json(hasOperationalSignalsForMethod(estrazioni, "Metodo Venere") ? payload : clearMethodPayloadIfExpired(payload));
   } catch (error) {
     console.error("Errore metodo venere:", error);
     res.status(500).json({ errore: "Impossibile calcolare il metodo Venere", dettaglio: error.message });
