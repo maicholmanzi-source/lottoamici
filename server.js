@@ -1,5 +1,4 @@
 import express from "express";
-import * as cheerio from "cheerio";
 import path from "path";
 import { fileURLToPath } from "url";
 import {
@@ -352,6 +351,21 @@ function splitBlocks(text) {
   return blocks;
 }
 
+function stripHtmlToText(html) {
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, " ")
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function parseBlock(block) {
   const dateMatch = block.match(
     /(Lunedì|Martedì|Mercoledì|Giovedì|Venerdì|Sabato|Domenica)\s+\d{1,2}\s+[A-Za-zàèéìòù]+\s+\d{4}/i
@@ -390,8 +404,7 @@ async function downloadArchive(url) {
   if (!response.ok) throw new Error(`Errore nel download archivio: ${response.status}`);
 
   const html = await response.text();
-  const $ = cheerio.load(html);
-  const text = normalizeText($("body").text());
+  const text = normalizeText(stripHtmlToText(html));
 
   return splitBlocks(text).map(parseBlock).filter(Boolean);
 }
@@ -2601,7 +2614,8 @@ function authPayload(user) {
     isAdmin: Boolean(canAccessAdminPanel(user)),
     isSeniorAdmin: Boolean(isSeniorAdmin(user)),
     canManageUsers: Boolean(canAccessAdminPanel(user)),
-    canManageRoles: Boolean(isSeniorAdmin(user)),
+    canManageRoles: Boolean(canAccessAdminPanel(user)),
+    canAssignSenior: Boolean(isSeniorAdmin(user)),
     user: user
       ? {
           id: user.id,
@@ -2860,13 +2874,18 @@ app.post("/api/admin/users/:id/status", requireAdminApi, async (req, res) => {
 
 app.post("/api/admin/users/:id/role", requireAdminApi, async (req, res) => {
   try {
-    if (!isSeniorAdmin(req.authUser)) {
-      return res.status(403).json({ errore: "Solo un admin senior può cambiare i ruoli." });
+    const isSenior = isSeniorAdmin(req.authUser);
+    const isAdmin = canAccessAdminPanel(req.authUser);
+    if (!isAdmin) {
+      return res.status(403).json({ errore: "Solo un admin può cambiare i ruoli." });
     }
 
     const role = String(req.body?.role || "");
     if (!USER_ROLES.includes(role)) {
       return res.status(400).json({ errore: "Ruolo non valido" });
+    }
+    if (!isSenior && role === "admin_senior") {
+      return res.status(403).json({ errore: "Solo un admin senior può assegnare il livello admin senior." });
     }
 
     const targetUserId = Number(req.params.id);
@@ -2874,8 +2893,13 @@ app.post("/api/admin/users/:id/role", requireAdminApi, async (req, res) => {
       return res.status(400).json({ errore: "Utente non valido" });
     }
 
-    if (req.authUser?.id === targetUserId && role !== "admin_senior") {
-      return res.status(400).json({ errore: "L'admin senior corrente non può abbassare da solo il proprio livello." });
+    if (req.authUser?.id === targetUserId) {
+      if (isSenior && role !== "admin_senior") {
+        return res.status(400).json({ errore: "L'admin senior corrente non può abbassare da solo il proprio livello." });
+      }
+      if (!isSenior) {
+        return res.status(400).json({ errore: "Un admin non può cambiare da solo il proprio livello." });
+      }
     }
 
     const user = await updateUserRole(targetUserId, role);

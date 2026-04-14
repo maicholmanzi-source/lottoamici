@@ -52,6 +52,7 @@ function getAuthState() {
     isSeniorAdmin: false,
     canManageUsers: false,
     canManageRoles: false,
+    canAssignSenior: false,
     user: null
   };
 }
@@ -63,9 +64,11 @@ function formatUserStatus(status) {
   return status || 'ospite';
 }
 
-function roleOptionsMarkup(selectedRole) {
-  return ASSIGNABLE_ROLES.map((role) => {
-    const selected = role === selectedRole ? ' selected' : '';
+function roleOptionsMarkup(selectedRole, currentState = {}) {
+  const allowedRoles = currentState?.canAssignSenior ? ASSIGNABLE_ROLES : ASSIGNABLE_ROLES.filter((role) => role !== 'admin_senior');
+  const safeSelected = allowedRoles.includes(selectedRole) ? selectedRole : allowedRoles[0] || 'user';
+  return allowedRoles.map((role) => {
+    const selected = role === safeSelected ? ' selected' : '';
     return `<option value="${role}"${selected}>${escapeHtml(formatRole(role))}</option>`;
   }).join('');
 }
@@ -249,7 +252,7 @@ function adminRow(user, currentState) {
     ? `
       <div class="role-edit-wrap">
         <select data-role-select data-user-id="${user.id}" ${isSelf ? 'disabled' : ''}>
-          ${roleOptionsMarkup(user.role)}
+          ${roleOptionsMarkup(user.role, currentState)}
         </select>
         <button type="button" class="secondary-button" data-role-save data-user-id="${user.id}" ${isSelf ? 'disabled' : ''}>Salva ruolo</button>
       </div>
