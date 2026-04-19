@@ -2037,638 +2037,82 @@ body.home-page .section-title-row .muted {
 }
 
 
-/* === Restyling premium 2026 === */
-:root {
-  --ui-navy: #0f2f4d;
-  --ui-navy-soft: #173f66;
-  --ui-gold: #d9b26d;
-  --ui-gold-soft: #f4e4c4;
-  --ui-cream: #fbf7f0;
-  --ui-paper: rgba(255, 250, 244, 0.9);
-  --ui-paper-strong: rgba(255, 252, 248, 0.96);
-  --ui-border: rgba(138, 98, 41, 0.16);
-  --ui-shadow: 0 18px 38px rgba(44, 29, 11, 0.12);
-  --ui-shadow-soft: 0 10px 24px rgba(44, 29, 11, 0.08);
-}
-
-html {
-  scroll-behavior: smooth;
-}
-
-body {
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #1f2937;
-  background:
-    radial-gradient(circle at top left, rgba(241, 214, 160, 0.22), transparent 32%),
-    linear-gradient(180deg, #f8f3ea 0%, #f3ecdf 100%);
-}
-
-body.app-page {
-  min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, rgba(241, 214, 160, 0.22), transparent 28%),
-    radial-gradient(circle at top right, rgba(13, 59, 102, 0.10), transparent 30%),
-    linear-gradient(rgba(247, 240, 230, 0.9), rgba(244, 236, 224, 0.94)),
-    url("/home-page-bg.png") center top / cover fixed no-repeat;
-}
-
-body.app-page main.container {
-  padding-top: 28px;
-  padding-bottom: 52px;
-}
-
-body.app-page .container,
-body.home-page .container {
-  max-width: 1180px;
-}
-
-body.app-page .inner-hero {
-  position: relative;
-  overflow: hidden;
-  padding: 28px 20px 42px;
-  background:
-    linear-gradient(135deg, rgba(11, 42, 70, 0.92), rgba(18, 63, 101, 0.78)),
-    url("/lotto-home-bg.jpg") center center / cover no-repeat;
-  box-shadow: 0 18px 34px rgba(15, 23, 42, 0.14);
-}
-
-body.app-page .inner-hero::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 14% 18%, rgba(255,255,255,0.16), transparent 24%),
-    linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.18));
-  pointer-events: none;
-}
-
-body.app-page .inner-hero > * {
-  position: relative;
-  z-index: 1;
-}
-
-body.app-page .inner-hero h1,
-body.app-page .inner-hero p {
-  text-shadow: 0 3px 16px rgba(0,0,0,0.24);
-}
-
-body.app-page .nav,
-body.home-page .nav {
-  width: fit-content;
-  margin: 0 auto 22px;
-  padding: 10px;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.12);
-  border: 1px solid rgba(255,255,255,0.14);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 14px 28px rgba(0,0,0,0.14);
-}
-
-body.app-page .nav a {
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.92);
-  color: var(--ui-navy);
-  transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
-  box-shadow: 0 6px 14px rgba(13, 59, 102, 0.08);
-}
-
-body.app-page .nav a:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 20px rgba(13, 59, 102, 0.14);
-  background: #fffdf8;
-}
-
-body.app-page .nav a.active {
-  background: linear-gradient(135deg, #f4e2be 0%, #dfbb7a 100%);
-  color: #5f3810;
-  box-shadow: 0 10px 20px rgba(151, 104, 27, 0.18);
-}
-
-body.app-page .card,
-body.app-page .controls-card,
-body.app-page .featured-method-card,
-body.app-page .home-highlight-card,
-body.app-page .method-card,
-body.app-page .ticket-main-play,
-body.app-page .ticket-facsimile,
-body.app-page .play-entry,
-body.app-page .play-entry-status,
-body.app-page .stake-card,
-body.app-page .mode-card,
-body.app-page .method-podium-meta,
-body.app-page .stats-detail-list,
-body.app-page .stat-box,
-body.app-page .mini-stat,
-body.app-page .budget-item,
-body.app-page .ticket-kind-chip,
-body.app-page .wheel-option,
-body.app-page .upload-box,
-body.app-page .home-chat-message,
-body.app-page .ticket-alt-pill,
-body.app-page .cappuccini-summary-box,
-body.app-page .cappuccini-data-box,
-body.app-page .cappuccini-ambo-box,
-body.app-page .pyramid-level {
-  background: var(--ui-paper);
-  border: 1px solid var(--ui-border);
-  box-shadow: var(--ui-shadow-soft);
-  backdrop-filter: blur(8px);
-}
-
-body.app-page .card,
-body.app-page .method-card,
-body.app-page .featured-method-card,
-body.app-page .ticket-card,
-body.app-page .method-summary-card {
-  border-radius: 24px;
-}
-
-body.app-page .card:hover,
-body.app-page .method-card:hover,
-body.app-page .featured-method-card:hover,
-body.app-page .ticket-card:hover,
-body.app-page .method-summary-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--ui-shadow);
-}
-
-body.app-page .cards {
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 18px;
-}
-
-body.app-page .methods-grid,
-body.app-page .featured-methods-grid,
-body.app-page .camera-layout,
-body.app-page .mode-grid {
-  gap: 18px;
-}
-
-body.app-page h1,
-body.app-page h2,
-body.app-page h3,
-body.app-page h4 {
-  letter-spacing: -0.02em;
-}
-
-body.app-page h1 {
-  font-size: clamp(2rem, 3.4vw, 3.2rem);
-  margin-bottom: 10px;
-}
-
-body.app-page h2 {
-  font-size: clamp(1.25rem, 2vw, 1.8rem);
-}
-
-body.app-page p,
-body.app-page li,
-body.app-page label,
-body.app-page small,
-body.app-page .muted {
-  line-height: 1.55;
-}
-
-body.app-page .muted {
-  color: #5f6b78;
-}
-
-body.app-page .ruota {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 14px;
-  background: rgba(235, 243, 252, 0.78);
-  border: 1px solid rgba(52, 109, 171, 0.10);
-}
-
-body.app-page .numbers-row {
-  gap: 10px;
-}
-
-body.app-page .number-pill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 48px;
-  min-height: 48px;
-  padding: 0 14px;
-  border-radius: 999px;
-  background:
-    radial-gradient(circle at 30% 28%, rgba(255,255,255,0.86) 0 18%, rgba(255,255,255,0) 20%),
-    linear-gradient(135deg, #11385d 0%, #1a4e7d 42%, #0d2944 100%);
-  border: 1px solid rgba(6, 25, 41, 0.16);
-  box-shadow:
-    inset 0 2px 2px rgba(255,255,255,0.24),
-    inset 0 -8px 14px rgba(0,0,0,0.18),
-    0 8px 14px rgba(13, 41, 68, 0.16);
-  font-size: 1rem;
-  letter-spacing: 0.04em;
-}
-
-body.app-page .badge,
-body.app-page .method-rank-pill,
-body.app-page .method-reliability-pill,
-body.app-page .method-name-badge,
-body.app-page .top-rank-badge,
-body.app-page .month-badge,
-body.app-page .ticket-kind-chip,
-body.app-page .result-chip,
-body.app-page .chat-live-chip {
-  border: 1px solid rgba(143, 101, 33, 0.10);
-  box-shadow: 0 8px 14px rgba(80, 53, 14, 0.08);
-}
-
-body.app-page .badge {
-  background: linear-gradient(135deg, #fbf1da 0%, #efd7a2 100%);
-  color: #7a4e0d;
-}
-
-body.app-page button,
-body.app-page .method-button,
-body.app-page .nav-logout-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border: 0;
-  border-radius: 999px;
-  padding: 12px 18px;
-  background: linear-gradient(135deg, #11385d 0%, #1a4e7d 100%);
-  color: #fff;
-  text-decoration: none;
-  font-weight: 700;
-  box-shadow: 0 10px 22px rgba(13, 59, 102, 0.22);
-  transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
-  cursor: pointer;
-}
-
-body.app-page button:hover,
-body.app-page .method-button:hover,
-body.app-page .nav-logout-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 16px 26px rgba(13, 59, 102, 0.24);
-  filter: saturate(1.04);
-}
-
-body.app-page .secondary-button,
-body.app-page button.secondary-button {
-  background: linear-gradient(135deg, #f4e3c3 0%, #dfbb7a 100%);
-  color: #6b4210;
-  box-shadow: 0 12px 22px rgba(177, 128, 54, 0.18);
-}
-
-body.app-page input,
-body.app-page select,
-body.app-page textarea {
-  border-radius: 14px;
-  border: 1px solid rgba(97, 125, 156, 0.18);
-  background: rgba(255,255,255,0.84);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.54);
-}
-
-body.app-page input:focus,
-body.app-page select:focus,
-body.app-page textarea:focus {
-  outline: none;
-  border-color: rgba(26, 78, 125, 0.44);
-  box-shadow: 0 0 0 4px rgba(26, 78, 125, 0.10);
-}
-
-body.app-page .section-title-row,
-body.app-page .home-box-header,
-body.app-page .wheel-header-row,
-body.app-page .result-hero-top,
-body.app-page .method-summary-header,
-body.app-page .featured-method-topline,
-body.app-page .ticket-paper-topline {
-  gap: 16px;
-}
-
-body.app-page .method-header-chip {
-  background: linear-gradient(135deg, rgba(13, 59, 102, 0.96), rgba(26, 78, 125, 0.88));
-  box-shadow: 0 10px 20px rgba(13, 59, 102, 0.16);
-}
-
-body.app-page .method-overline {
-  color: #9b6221;
-}
-
-body.app-page .stats-grid,
-body.app-page .featured-stats-grid,
-body.app-page .cappuccini-summary-grid,
-body.app-page .cappuccini-data-grid {
+/* FIX pagina Giocate */
+body.plays-page #giocateMetodi {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 14px;
-}
-
-body.app-page .cappuccini-summary-box,
-body.app-page .cappuccini-data-box,
-body.app-page .cappuccini-ambo-box {
-  border-radius: 18px;
-  padding: 16px 18px;
-}
-
-body.app-page .cappuccini-summary-box span,
-body.app-page .cappuccini-data-box span,
-body.app-page .cappuccini-ambo-box span {
-  display: block;
-  margin-bottom: 8px;
-  font-size: 0.84rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #8b5b1d;
-}
-
-body.app-page .cappuccini-summary-box strong {
-  display: block;
-  font-size: 1.2rem;
-  color: #10253d;
-}
-
-body.app-page .cappuccini-summary-box small {
-  display: block;
-  margin-top: 6px;
-  color: #66727f;
-}
-
-body.app-page .cappuccini-flow {
-  display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  gap: 16px;
-  margin: 18px 0;
-}
-
-body.app-page .cappuccini-stage {
-  padding: 16px 18px;
-  border-radius: 20px;
-  background: rgba(255,255,255,0.64);
-  border: 1px solid rgba(138, 98, 41, 0.12);
-}
-
-body.app-page .cappuccini-stage h4 {
-  margin: 0 0 12px;
-  color: #10253d;
-}
-
-body.app-page .pyramid-stack {
-  display: grid;
-  gap: 10px;
-}
-
-body.app-page .pyramid-level {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 16px;
-}
-
-body.app-page .pyramid-level .numbers-row {
-  margin: 0;
-}
-
-body.app-page .accent-box {
-  background: linear-gradient(180deg, rgba(239, 247, 255, 0.92), rgba(231, 241, 251, 0.86));
-}
-
-body.app-page .cappuccini-ambo-box {
-  background: linear-gradient(135deg, rgba(244, 227, 195, 0.68), rgba(255, 250, 241, 0.92));
-}
-
-body.app-page .method-results-section {
-  margin-top: 10px;
-}
-
-body.app-page .ticket-facsimile,
-body.app-page .ticket-main-play {
-  border-radius: 22px;
-}
-
-body.app-page .ticket-details-panel,
-body.app-page .play-entry-status,
-body.app-page .result-amount-box {
-  background: rgba(255,255,255,0.72);
-}
-
-body.app-page .featured-method-card,
-body.app-page .ticket-card,
-body.app-page .method-summary-card,
-body.app-page .stats-card {
-  overflow: hidden;
-  position: relative;
-}
-
-body.app-page .featured-method-card::before,
-body.app-page .ticket-card::before,
-body.app-page .method-summary-card::before,
-body.app-page .stats-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(255,255,255,0.18), transparent 35%);
-  pointer-events: none;
-}
-
-body.app-page .note {
-  background: linear-gradient(135deg, rgba(255, 247, 214, 0.92), rgba(255, 250, 237, 0.96));
-  border-left: 5px solid #e1ae4d;
-}
-
-body.app-page .mode-card,
-body.app-page .wheel-option,
-body.app-page .stake-card,
-body.app-page .upload-box {
-  border-radius: 18px;
-}
-
-body.app-page .admin-table th {
-  color: #0f2f4d;
-  font-size: 0.92rem;
-}
-
-body.app-page .admin-table td,
-body.app-page .admin-table th {
-  background: rgba(255,255,255,0.42);
-}
-
-body.app-page .status-approved {
-  background: #e7f9ed;
-}
-
-body.app-page .status-pending {
-  background: #fff5dd;
-}
-
-body.app-page .status-rejected {
-  background: #fde6e6;
-}
-
-body.home-page .card,
-body.home-page .controls-card,
-body.home-page .featured-method-card,
-body.home-page .home-highlight-card,
-body.home-page .home-chat-message {
-  border-radius: 24px;
-  border: 1px solid rgba(138, 98, 41, 0.14);
-}
-
-body.home-page .card,
-body.home-page .controls-card,
-body.home-page .featured-method-card,
-body.home-page .home-highlight-card {
-  box-shadow: 0 18px 38px rgba(86, 43, 8, 0.14);
-}
-
-body.home-page .numbers-row {
-  gap: 10px;
-}
-
-body.home-page .number-pill {
-  min-width: 46px;
-  min-height: 46px;
-  padding: 0 13px;
-  border-radius: 999px;
-  background:
-    radial-gradient(circle at 30% 28%, rgba(255,255,255,0.86) 0 18%, rgba(255,255,255,0) 20%),
-    linear-gradient(135deg, #11385d 0%, #1a4e7d 42%, #0d2944 100%);
-  border: 1px solid rgba(6, 25, 41, 0.16);
-  box-shadow:
-    inset 0 2px 2px rgba(255,255,255,0.24),
-    inset 0 -8px 14px rgba(0,0,0,0.18),
-    0 8px 14px rgba(13, 41, 68, 0.16);
-}
-
-@media (max-width: 900px) {
-  body.app-page .cappuccini-flow,
-  body.app-page .ticket-ready-box,
-  body.app-page .play-entry-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 720px) {
-  body.app-page .nav,
-  body.home-page .nav {
-    width: auto;
-    padding: 10px;
-    border-radius: 24px;
-  }
-
-  body.app-page .cards {
-    grid-template-columns: 1fr;
-  }
-
-  body.app-page .inner-hero,
-  body.home-page .hero {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
-
-  body.app-page .cappuccini-summary-grid,
-  body.app-page .cappuccini-data-grid,
-  body.app-page .stats-grid,
-  body.app-page .featured-stats-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-
-/* Fix dedicato: pagina schedine pronte */
-body.tickets-page #schedinePronteGrid {
   grid-template-columns: 1fr;
-  align-items: start;
+  gap: 20px;
 }
 
-body.tickets-page .ticket-card {
+body.plays-page .method-summary-card {
   width: 100%;
   overflow: hidden;
 }
 
-body.tickets-page .method-summary-header,
-body.tickets-page .method-podium-meta,
-body.tickets-page .ticket-paper-topline,
-body.tickets-page .ticket-footer-row {
+body.plays-page .method-summary-header {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-}
-
-body.tickets-page .method-summary-header,
-body.tickets-page .ticket-paper-topline {
   justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  flex-wrap: wrap;
 }
 
-body.tickets-page .ticket-footer-row {
-  justify-content: flex-start;
+body.plays-page .method-header-chip {
+  min-width: 0;
+  white-space: normal;
+  text-align: center;
 }
 
-body.tickets-page .ticket-ready-box,
-body.tickets-page .ticket-budget-box,
-body.tickets-page .play-entry-grid,
-body.tickets-page .ticket-paper-meta-grid,
-body.tickets-page .ticket-paper-strip {
-  align-items: start;
+body.plays-page .play-entry {
+  overflow: hidden;
 }
 
-body.tickets-page .ticket-ready-box > *,
-body.tickets-page .ticket-budget-box > *,
-body.tickets-page .play-entry-grid > *,
-body.tickets-page .ticket-paper-meta-grid > *,
-body.tickets-page .ticket-paper-strip > * {
+body.plays-page .play-entry-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+body.plays-page .play-entry-main,
+body.plays-page .play-entry-status,
+body.plays-page .status-meta-list,
+body.plays-page .status-meta-item,
+body.plays-page .numbers-row {
   min-width: 0;
 }
 
-body.tickets-page .ticket-paper-numbers {
-  grid-template-columns: repeat(auto-fit, minmax(52px, 1fr));
+body.plays-page .play-entry-status {
+  width: 100%;
+  box-sizing: border-box;
 }
 
-body.tickets-page .ticket-paper-number,
-body.tickets-page .ticket-paper-empty {
-  min-width: 0;
+body.plays-page .status-meta-item {
+  flex-wrap: wrap;
+  align-items: flex-start;
 }
 
-body.tickets-page .ticket-main-play,
-body.tickets-page .ticket-facsimile,
-body.tickets-page .play-entry-status {
-  height: auto;
+body.plays-page .status-meta-item span {
+  text-align: left;
+  word-break: break-word;
 }
 
-body.tickets-page .ticket-details-list,
-body.tickets-page .ticket-alt-list,
-body.tickets-page .status-meta-list {
-  gap: 10px;
+body.plays-page .numbers-row {
+  row-gap: 10px;
 }
 
-body.tickets-page .ticket-detail-item,
-body.tickets-page .budget-item,
-body.tickets-page .status-meta-item {
-  overflow-wrap: anywhere;
+body.plays-page .number-pill,
+body.plays-page .method-name-badge,
+body.plays-page .result-chip,
+body.plays-page .method-rank-pill,
+body.plays-page .method-reliability-pill {
+  max-width: 100%;
+  white-space: normal;
 }
 
-@media (max-width: 1120px) {
-  body.tickets-page .ticket-ready-box,
-  body.tickets-page .play-entry-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 820px) {
-  body.tickets-page .ticket-budget-box,
-  body.tickets-page .ticket-paper-meta-grid,
-  body.tickets-page .ticket-paper-strip {
-    grid-template-columns: 1fr;
+@media (max-width: 768px) {
+  body.plays-page .card {
+    padding: 14px;
   }
 
-  body.tickets-page .ticket-paper-meta-item.align-right {
-    text-align: left;
-  }
-
-  body.tickets-page .ticket-paper-footer {
-    flex-direction: column;
-    align-items: flex-start;
+  body.plays-page .play-entry {
+    padding: 12px;
   }
 }
