@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Metodo Vera Distanza del 45</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="hero">
+    <nav class="nav">
+      <a href="/">Home</a>
+      <a href="/schedine-pronte.html">Schedine pronte</a>
+      <a href="/giocate.html">Giocate</a>
+      <a href="/verifica-schedina.html">Verifica schedina</a>
+      <a href="/metodi.html" class="active">Metodi</a>
+      <a href="/fai-3-fai-4.html">Fai 3 Fai 4</a>
+    </nav>
+
+    <h1>Metodo Vera Distanza del 45</h1>
+    <p>Versione automatizzata basata sulle coppie diametrali a distanza 45 nella stessa ruota</p>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Regola applicata</h2>
+      <p>
+        La pagina cerca nell'ultima estrazione tutte le coppie di numeri della stessa cinquina
+        con distanza esatta di 45.
+      </p>
+      <p>
+        Per ogni coppia mostra l'ambo base, l'ambo dei vertibili e due ambi derivati con capogioco.
+      </p>
+      <p class="note">
+        Questa è una versione automatizzata e dichiarata del metodo, costruita sulla logica della distanza diametrale 45.
+      </p>
+    </section>
+
+    <section class="controls">
+      <button id="aggiorna">Aggiorna previsioni</button>
+    </section>
+
+    <section id="riepilogo" class="card">
+      Caricamento...
+    </section>
+
+    <section>
+      <h2>Ruote con segnale</h2>
+      <div id="listaDistanza45" class="cards"></div>
+    </section>
+  </main>
+
+  <script src="auth.js"></script>
+  <script src="metodo-vera-distanza-45.js"></script>
+</body>
+</html>

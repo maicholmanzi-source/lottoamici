@@ -282,6 +282,20 @@ const METHOD_META = {
     descrizione: "Lavora sulla coppia Venezia-Roma e propone ambi da capogiochi e vertibili.",
     focus: "Ambi"
   },
+  "Metodo Vera Distanza del 45": {
+    slug: "vera-distanza-45",
+    shortName: "Vera Distanza 45",
+    path: "/metodo-vera-distanza-45.html",
+    descrizione: "Rileva coppie diametrali a distanza 45 sulla stessa ruota e propone ambi base e vertibili.",
+    focus: "Ambi diametrali"
+  },
+  "Metodo Florentia Viola": {
+    slug: "florentia-viola",
+    shortName: "Florentia Viola",
+    path: "/metodo-florentia-viola.html",
+    descrizione: "Versione automatizzata su Firenze con somme simmetriche e vertibili ricavati dalla cinquina.",
+    focus: "Ambi su Firenze"
+  }
 };
 
 const RUOTE_TUTTE = ["Bari", "Cagliari", "Firenze", "Genova", "Milano", "Napoli", "Palermo", "Roma", "Torino", "Venezia"];
@@ -547,6 +561,7 @@ function uniqueNumbers(numeri) {
   return [...new Set(numeri)];
 }
 
+ HEAD
 function buildPyramidSteps(numbers = []) {
   const normalized = numbers
     .map((numero) => Number(numero))
@@ -608,6 +623,52 @@ function buildCappucciniForecast(cinquina = []) {
     triadeSimmetrica,
     ambate,
     ambo
+=======
+function findPairsAtDistance45(cinquina = []) {
+  const pairs = [];
+  for (let i = 0; i < cinquina.length; i += 1) {
+    for (let j = i + 1; j < cinquina.length; j += 1) {
+      if (Math.abs(cinquina[i] - cinquina[j]) === 45) {
+        const pair = [cinquina[i], cinquina[j]].sort((a, b) => a - b);
+        pairs.push({
+          posizione1: i + 1,
+          posizione2: j + 1,
+          numeri: pair,
+          capogioco: fuori90(pair[0] + pair[1]),
+          vertibili: [getVertibile(pair[0]), getVertibile(pair[1])]
+        });
+      }
+    }
+  }
+  return pairs;
+}
+
+function buildFlorentiaViolaFromCinquina(cinquina = []) {
+  if (!Array.isArray(cinquina) || cinquina.length !== 5) return null;
+  const [n1, n2, n3, n4, n5] = cinquina;
+  const capogioco1 = fuori90(n1 + n3);
+  const capogioco2 = fuori90(n3 + n5);
+  const capogioco3 = fuori90(n2 + n4);
+  const abbinamento1 = getVertibile(capogioco1);
+  const abbinamento2 = getVertibile(capogioco2);
+  const abbinamento3 = getVertibile(capogioco3);
+  const ambi = uniqueNumbers([
+    [capogioco1, abbinamento1].sort((a, b) => a - b),
+    [capogioco2, abbinamento2].sort((a, b) => a - b),
+    [capogioco1, capogioco2].sort((a, b) => a - b),
+    [capogioco1, capogioco3].sort((a, b) => a - b),
+    [capogioco2, capogioco3].sort((a, b) => a - b)
+  ].map((ambo) => JSON.stringify(ambo))).map((ambo) => JSON.parse(ambo));
+
+  return {
+    capogioco1,
+    capogioco2,
+    capogioco3,
+    abbinamento1,
+    abbinamento2,
+    abbinamento3,
+    ambi
+>>>>>>> 7e58f1c (aggiunta metodi cappuccini florentia viola e vera distanza 45)
   };
 }
 
@@ -1258,6 +1319,103 @@ function getPrevisioniVenere(estrazioni) {
   };
 }
 
+function getPrevisioniVeraDistanza45(estrazioni) {
+  const estrazione = estrazioni[0] || null;
+  if (!estrazione) {
+    return {
+      metodo: "Metodo Vera Distanza del 45",
+      descrizione:
+        "Versione automatizzata: cerca coppie diametrali a distanza 45 nella stessa cinquina e propone ambo base, vertibile e capogioco.",
+      estrazioneRilevamento: null,
+      risultati: []
+    };
+  }
+
+  const risultati = RUOTE.filter((ruota) => ruota !== "Nazionale")
+    .map((ruota) => {
+      const cinquina = estrazione?.ruote?.[ruota] || [];
+      if (cinquina.length !== 5) return null;
+      const previsioni = findPairsAtDistance45(cinquina).map((item) => ({
+        ...item,
+        amboBase: item.numeri,
+        amboVertibile: item.vertibili,
+        amboCapogioco1: [item.numeri[0], item.capogioco].sort((a, b) => a - b),
+        amboCapogioco2: [item.numeri[1], item.capogioco].sort((a, b) => a - b)
+      }));
+      if (!previsioni.length) return null;
+      return {
+        ruota,
+        cinquina,
+        dataSegnale: estrazione.data,
+        dataSegnaleTesto: estrazione.dataTesto,
+        concorso: estrazione.concorso,
+        colpiPassati: 0,
+        previsioni
+      };
+    })
+    .filter(Boolean);
+
+  return {
+    metodo: "Metodo Vera Distanza del 45",
+    descrizione:
+      "Versione automatizzata: cerca coppie diametrali a distanza 45 nella stessa cinquina e propone ambo base, vertibile e capogioco.",
+    estrazioneRilevamento: {
+      data: estrazione.data,
+      dataTesto: estrazione.dataTesto,
+      concorso: estrazione.concorso
+    },
+    risultati
+  };
+}
+
+function getPrevisioniFlorentiaViola(estrazioni) {
+  const estrazione = estrazioni[0] || null;
+  if (!estrazione) {
+    return {
+      metodo: "Metodo Florentia Viola",
+      descrizione:
+        "Versione automatizzata su Firenze: usa somme simmetriche della cinquina e relativi vertibili per costruire ambi sulla ruota di Firenze.",
+      estrazioneRilevamento: null,
+      previsioni: []
+    };
+  }
+
+  const cinquina = estrazione?.ruote?.["Firenze"] || [];
+  const calcolo = buildFlorentiaViolaFromCinquina(cinquina);
+  if (!calcolo) {
+    return {
+      metodo: "Metodo Florentia Viola",
+      descrizione:
+        "Versione automatizzata su Firenze: usa somme simmetriche della cinquina e relativi vertibili per costruire ambi sulla ruota di Firenze.",
+      estrazioneRilevamento: {
+        data: estrazione.data,
+        dataTesto: estrazione.dataTesto,
+        concorso: estrazione.concorso
+      },
+      ruotaDiGioco: "Firenze",
+      cinquina: [],
+      previsioni: []
+    };
+  }
+
+  return {
+    metodo: "Metodo Florentia Viola",
+    descrizione:
+      "Versione automatizzata su Firenze: usa somme simmetriche della cinquina e relativi vertibili per costruire ambi sulla ruota di Firenze.",
+    estrazioneRilevamento: {
+      data: estrazione.data,
+      dataTesto: estrazione.dataTesto,
+      concorso: estrazione.concorso
+    },
+    ruotaDiGioco: "Firenze",
+    cinquina,
+    previsioni: [{
+      posizioneCentrale: 3,
+      ...calcolo
+    }]
+  };
+}
+
 
 function getTipoGiocataLabel(size) {
   switch (size) {
@@ -1513,6 +1671,52 @@ function buildGiocateGroups(estrazioni) {
     });
   }
 
+  const distanza45 = getPrevisioniVeraDistanza45(estrazioni);
+  if (distanza45?.risultati?.length) {
+    groups.push({
+      nome: "Metodo Vera Distanza del 45",
+      items: sortBySignalDateDesc(distanza45.risultati.flatMap((item) => (
+        (item.previsioni || []).map((prev) => ({
+          titolo: item.ruota,
+          sottotitolo: `Coppia ${formatNumeroLabel(prev.numeri[0])}-${formatNumeroLabel(prev.numeri[1])}`,
+          descrizione: "Ambi diametrali e capogioco del 45",
+          numeri: uniqueNumbers([...(prev.amboBase || []), ...(prev.amboVertibile || []), prev.capogioco]),
+          ruote: [item.ruota],
+          giocate: [prev.amboBase, prev.amboVertibile, prev.amboCapogioco1, prev.amboCapogioco2].filter(Boolean),
+          dataSegnale: item.dataSegnale,
+          dataSegnaleTesto: item.dataSegnaleTesto,
+          concorso: item.concorso,
+          colpiPassati: item.colpiPassati
+        }))
+      )))
+    });
+  }
+
+  const florentiaViola = getPrevisioniFlorentiaViola(estrazioni);
+  if (florentiaViola?.previsioni?.length) {
+    groups.push({
+      nome: "Metodo Florentia Viola",
+      items: florentiaViola.previsioni.map((item) => ({
+        titolo: florentiaViola.ruotaDiGioco || "Firenze",
+        sottotitolo: `Concorso ${florentiaViola.estrazioneRilevamento?.concorso || "N/D"}`,
+        descrizione: "Ambi simmetrici e vertibili sulla ruota di Firenze",
+        numeri: uniqueNumbers([
+          item.capogioco1,
+          item.capogioco2,
+          item.capogioco3,
+          item.abbinamento1,
+          item.abbinamento2,
+          item.abbinamento3
+        ]),
+        ruote: [florentiaViola.ruotaDiGioco || "Firenze"],
+        giocate: item.ambi || [],
+        dataSegnale: florentiaViola.estrazioneRilevamento?.data,
+        dataSegnaleTesto: florentiaViola.estrazioneRilevamento?.dataTesto,
+        concorso: florentiaViola.estrazioneRilevamento?.concorso,
+        colpiPassati: 0
+      }))
+    });
+  }
 
   return groups.filter((group) => group.items?.length);
 }
@@ -2120,6 +2324,58 @@ function buildHistoricalMethodSignals(estrazioni) {
           numeri: [capogioco1, capogioco2, abbinamento1, abbinamento2],
           ruote: ["Venezia"],
           giocate: [[capogioco1, abbinamento1], [capogioco2, abbinamento2]],
+          dataSegnale: estrazione.data,
+          dataSegnaleTesto: estrazione.dataTesto,
+          concorso: estrazione.concorso,
+          colpiPassati: countDrawsAfter(estrazioni, estrazione.data)
+        });
+      }
+    }
+
+    RUOTE.filter((ruota) => ruota !== "Nazionale").forEach((ruota) => {
+      const cinquina = estrazione.ruote?.[ruota] || [];
+      if (cinquina.length !== 5) return;
+      findPairsAtDistance45(cinquina).forEach((item) => {
+        signals.push({
+          metodo: "Metodo Vera Distanza del 45",
+          titolo: ruota,
+          sottotitolo: `Coppia ${formatNumeroLabel(item.numeri[0])}-${formatNumeroLabel(item.numeri[1])}`,
+          descrizione: "Ambi diametrali e capogioco del 45",
+          numeri: uniqueNumbers([...(item.numeri || []), ...(item.vertibili || []), item.capogioco]),
+          ruote: [ruota],
+          giocate: [
+            item.numeri,
+            item.vertibili,
+            [item.numeri[0], item.capogioco].sort((a, b) => a - b),
+            [item.numeri[1], item.capogioco].sort((a, b) => a - b)
+          ],
+          dataSegnale: estrazione.data,
+          dataSegnaleTesto: estrazione.dataTesto,
+          concorso: estrazione.concorso,
+          colpiPassati: countDrawsAfter(estrazioni, estrazione.data)
+        });
+      });
+    });
+
+    const firenze = estrazione.ruote?.["Firenze"] || [];
+    if (firenze.length === 5) {
+      const florentia = buildFlorentiaViolaFromCinquina(firenze);
+      if (florentia?.ambi?.length) {
+        signals.push({
+          metodo: "Metodo Florentia Viola",
+          titolo: "Firenze",
+          sottotitolo: `Concorso ${estrazione.concorso}`,
+          descrizione: "Ambi simmetrici e vertibili sulla ruota di Firenze",
+          numeri: uniqueNumbers([
+            florentia.capogioco1,
+            florentia.capogioco2,
+            florentia.capogioco3,
+            florentia.abbinamento1,
+            florentia.abbinamento2,
+            florentia.abbinamento3
+          ]),
+          ruote: ["Firenze"],
+          giocate: florentia.ambi,
           dataSegnale: estrazione.data,
           dataSegnaleTesto: estrazione.dataTesto,
           concorso: estrazione.concorso,
@@ -2961,8 +3217,14 @@ const protectedStaticPages = [
   "/metodo-isotopi.html",
   "/metodo-monco.html",
   "/metodo-ninja.html",
+ HEAD
   "/metodo-cappuccini.html",
   "/metodo-venere.html"
+=======
+  "/metodo-venere.html",
+  "/metodo-vera-distanza-45.html",
+  "/metodo-florentia-viola.html"
+>>>>>>> 7e58f1c (aggiunta metodi cappuccini florentia viola e vera distanza 45)
 ];
 
 protectedStaticPages.forEach((routePath) => {
@@ -3403,6 +3665,28 @@ app.get("/api/metodo-venere", requireApprovedApi, async (req, res) => {
   } catch (error) {
     console.error("Errore metodo venere:", error);
     res.status(500).json({ errore: "Impossibile calcolare il metodo Venere", dettaglio: error.message });
+  }
+});
+
+app.get("/api/metodo-vera-distanza-45", requireApprovedApi, async (req, res) => {
+  try {
+    const estrazioni = await getAllEstrazioni();
+    const payload = getPrevisioniVeraDistanza45(estrazioni);
+    res.json(hasOperationalSignalsForMethod(estrazioni, "Metodo Vera Distanza del 45") ? payload : clearMethodPayloadIfExpired(payload));
+  } catch (error) {
+    console.error("Errore metodo vera distanza del 45:", error);
+    res.status(500).json({ errore: "Impossibile calcolare il metodo Vera Distanza del 45", dettaglio: error.message });
+  }
+});
+
+app.get("/api/metodo-florentia-viola", requireApprovedApi, async (req, res) => {
+  try {
+    const estrazioni = await getAllEstrazioni();
+    const payload = getPrevisioniFlorentiaViola(estrazioni);
+    res.json(hasOperationalSignalsForMethod(estrazioni, "Metodo Florentia Viola") ? payload : clearMethodPayloadIfExpired(payload));
+  } catch (error) {
+    console.error("Errore metodo Florentia Viola:", error);
+    res.status(500).json({ errore: "Impossibile calcolare il metodo Florentia Viola", dettaglio: error.message });
   }
 });
 
