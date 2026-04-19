@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Metodo Tavola dei Cappuccini</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="hero">
+    <nav class="nav">
+      <a href="/">Home</a>
+      <a href="/schedine-pronte.html">Schedine pronte</a>
+      <a href="/giocate.html">Giocate</a>
+      <a href="/verifica-schedina.html">Verifica schedina</a>
+      <a href="/metodi.html" class="active">Metodi</a>
+      <a href="/fai-3-fai-4.html">Fai 3 Fai 4</a>
+    </nav>
+
+    <h1>Tavola dei Cappuccini</h1>
+    <p>Versione automatizzata del sito ispirata alla Tavola del Cappuccino</p>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Regola applicata</h2>
+      <p>
+        Questa versione usa l'ultima estrazione disponibile su ogni ruota e applica una
+        <strong>piramidazione</strong> della cinquina fino a ottenere un numero base.
+      </p>
+      <p>
+        Dal numero piramidato ricava la <strong>somma magica</strong> come 3×numero con fuori 90,
+        il suo <strong>vertibile</strong> e la <strong>triade simmetrica</strong> collegata.
+      </p>
+      <p class="note">
+        Nel sito il metodo è stato reso in forma chiara e dichiarata, così entra nelle statistiche,
+        nelle giocate e nelle schedine pronte senza passaggi manuali.
+      </p>
+    </section>
+
+    <section class="controls">
+      <button id="aggiorna">Aggiorna previsioni</button>
+    </section>
+
+    <section id="riepilogo" class="card">
+      Caricamento...
+    </section>
+
+    <section>
+      <h2>Previsioni per ruota</h2>
+      <div id="listaCappuccini" class="cards"></div>
+    </section>
+  </main>
+
+  <script src="auth.js"></script>
+  <script src="metodo-cappuccini.js"></script>
+</body>
+</html>
