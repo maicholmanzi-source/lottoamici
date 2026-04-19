@@ -268,13 +268,6 @@ const METHOD_META = {
     descrizione: "Scatta quando compare il 30 in pari posizione e restituisce terzine derivate.",
     focus: "Terzine"
   },
-  "Metodo Tavola dei Cappuccini": {
-    slug: "cappuccini",
-    shortName: "Tavola Cappuccini",
-    path: "/metodo-cappuccini.html",
-    descrizione: "Piramida la cinquina della ruota e ricava somma magica, vertibile e triade simmetrica.",
-    focus: "Ambate + ambo"
-  },
   "Metodo Venere": {
     slug: "venere",
     shortName: "Venere",
@@ -561,69 +554,6 @@ function uniqueNumbers(numeri) {
   return [...new Set(numeri)];
 }
 
- HEAD
-function buildPyramidSteps(numbers = []) {
-  const normalized = numbers
-    .map((numero) => Number(numero))
-    .filter((numero) => Number.isFinite(numero))
-    .map((numero) => normalizeLottoNumber(numero));
-
-  if (!normalized.length) return [];
-
-  const steps = [normalized];
-  let current = normalized;
-
-  while (current.length > 1) {
-    const next = [];
-    for (let index = 0; index < current.length - 1; index += 1) {
-      next.push(fuori90(current[index] + current[index + 1]));
-    }
-    steps.push(next);
-    current = next;
-  }
-
-  return steps;
-}
-
-function getTriadeSimmetrica(numero) {
-  const base = normalizeLottoNumber(numero);
-  return uniqueNumbers([
-    base,
-    shiftLotto(base, 30),
-    shiftLotto(base, 60)
-  ]).sort((a, b) => a - b);
-}
-
-function buildCappucciniForecast(cinquina = []) {
-  const piramide = buildPyramidSteps(cinquina);
-  const numeroPiramidato = piramide[piramide.length - 1]?.[0] || null;
-  if (!numeroPiramidato) {
-    return {
-      piramide,
-      numeroPiramidato: null,
-      sommaMagica: null,
-      vertibileSomma: null,
-      triadeSimmetrica: [],
-      ambate: [],
-      ambo: []
-    };
-  }
-
-  const sommaMagica = fuori90(numeroPiramidato * 3);
-  const vertibileSomma = getVertibile(sommaMagica);
-  const triadeSimmetrica = getTriadeSimmetrica(numeroPiramidato);
-  const ambate = uniqueNumbers([sommaMagica, vertibileSomma]);
-  const ambo = ambate.length >= 2 ? ambate.slice(0, 2) : [];
-
-  return {
-    piramide,
-    numeroPiramidato,
-    sommaMagica,
-    vertibileSomma,
-    triadeSimmetrica,
-    ambate,
-    ambo
-=======
 function findPairsAtDistance45(cinquina = []) {
   const pairs = [];
   for (let i = 0; i < cinquina.length; i += 1) {
@@ -668,7 +598,6 @@ function buildFlorentiaViolaFromCinquina(cinquina = []) {
     abbinamento2,
     abbinamento3,
     ambi
->>>>>>> 7e58f1c (aggiunta metodi cappuccini florentia viola e vera distanza 45)
   };
 }
 
@@ -1191,64 +1120,6 @@ function getPrevisioniDoppio30(estrazioni) {
   };
 }
 
-function getPrevisioniTavolaCappuccini(estrazioni) {
-  const estrazione = estrazioni[0] || null;
-  if (!estrazione) {
-    return {
-      metodo: "Metodo Tavola dei Cappuccini",
-      descrizione:
-        "Versione automatizzata del sito: piramidazione della cinquina, somma magica (3×piramidato con fuori 90), vertibile e triade simmetrica.",
-      estrazioneRilevamento: null,
-      colpiPassati: 0,
-      colpiRimasti: 0,
-      previsioni: []
-    };
-  }
-
-  const colpiPassati = 0;
-  const colpiMassimi = 6;
-  const colpiRimasti = colpiMassimi;
-  const previsioni = RUOTE.map((ruota) => {
-    const cinquina = estrazione?.ruote?.[ruota] || [];
-    if (cinquina.length !== 5) return null;
-
-    const forecast = buildCappucciniForecast(cinquina);
-    if (!forecast.numeroPiramidato || !forecast.ambate.length) return null;
-
-    return {
-      ruota,
-      dataRilevamento: estrazione.data,
-      dataRilevamentoTesto: estrazione.dataTesto,
-      concorso: estrazione.concorso,
-      cinquina,
-      piramide: forecast.piramide,
-      numeroPiramidato: forecast.numeroPiramidato,
-      sommaMagica: forecast.sommaMagica,
-      vertibileSomma: forecast.vertibileSomma,
-      triadeSimmetrica: forecast.triadeSimmetrica,
-      ambate: forecast.ambate,
-      ambo: forecast.ambo,
-      colpiMassimi,
-      colpiPassati,
-      colpiRimasti
-    };
-  }).filter(Boolean);
-
-  return {
-    metodo: "Metodo Tavola dei Cappuccini",
-    descrizione:
-      "Versione automatizzata del sito: piramidazione della cinquina, somma magica (3×piramidato con fuori 90), vertibile e triade simmetrica.",
-    estrazioneRilevamento: {
-      data: estrazione.data,
-      dataTesto: estrazione.dataTesto,
-      concorso: estrazione.concorso
-    },
-    colpiPassati,
-    colpiRimasti,
-    previsioni
-  };
-}
-
 function getPrevisioniVenere(estrazioni) {
   const estrazione = estrazioni[0] || null;
   if (!estrazione) {
@@ -1622,30 +1493,6 @@ function buildGiocateGroups(estrazioni) {
           colpiPassati: item.colpiPassati
         }))
       )))
-    });
-  }
-
-  const cappuccini = getPrevisioniTavolaCappuccini(estrazioni);
-  if (cappuccini?.previsioni?.length) {
-    groups.push({
-      nome: "Metodo Tavola dei Cappuccini",
-      items: cappuccini.previsioni.map((item) => ({
-        titolo: item.ruota,
-        sottotitolo: `Piramidato ${formatNumeroLabel(item.numeroPiramidato)}`,
-        descrizione: "Somma magica, vertibile e ambo guida del metodo",
-        numeri: uniqueNumbers([...(item.ambate || []), ...(item.triadeSimmetrica || [])]),
-        ruote: [item.ruota],
-        giocate: [
-          ...((item.ambate || []).map((numero) => [numero])),
-          item.ambo || []
-        ].filter((entry) => Array.isArray(entry) && entry.length),
-        dataSegnale: item.dataRilevamento,
-        dataSegnaleTesto: item.dataRilevamentoTesto,
-        concorso: item.concorso,
-        colpiMassimi: item.colpiMassimi,
-        colpiPassati: item.colpiPassati,
-        colpiRimasti: item.colpiRimasti
-      }))
     });
   }
 
@@ -2276,30 +2123,6 @@ function buildHistoricalMethodSignals(estrazioni) {
         dataSegnale: estrazione.data,
         dataSegnaleTesto: estrazione.dataTesto,
         concorso: estrazione.concorso,
-        colpiPassati: countDrawsAfter(estrazioni, estrazione.data)
-      });
-    });
-
-    RUOTE.forEach((ruota) => {
-      const cinquina = estrazione.ruote?.[ruota] || [];
-      if (cinquina.length !== 5) return;
-      const forecast = buildCappucciniForecast(cinquina);
-      if (!forecast.numeroPiramidato || !forecast.ambate.length) return;
-      signals.push({
-        metodo: "Metodo Tavola dei Cappuccini",
-        titolo: ruota,
-        sottotitolo: `Piramidato ${formatNumeroLabel(forecast.numeroPiramidato)}`,
-        descrizione: "Somma magica, vertibile e ambo guida del metodo",
-        numeri: uniqueNumbers([...(forecast.ambate || []), ...(forecast.triadeSimmetrica || [])]),
-        ruote: [ruota],
-        giocate: [
-          ...((forecast.ambate || []).map((numero) => [numero])),
-          forecast.ambo || []
-        ].filter((entry) => Array.isArray(entry) && entry.length),
-        dataSegnale: estrazione.data,
-        dataSegnaleTesto: estrazione.dataTesto,
-        concorso: estrazione.concorso,
-        colpiMassimi: 6,
         colpiPassati: countDrawsAfter(estrazioni, estrazione.data)
       });
     });
@@ -3217,14 +3040,9 @@ const protectedStaticPages = [
   "/metodo-isotopi.html",
   "/metodo-monco.html",
   "/metodo-ninja.html",
- HEAD
-  "/metodo-cappuccini.html",
-  "/metodo-venere.html"
-=======
   "/metodo-venere.html",
   "/metodo-vera-distanza-45.html",
   "/metodo-florentia-viola.html"
->>>>>>> 7e58f1c (aggiunta metodi cappuccini florentia viola e vera distanza 45)
 ];
 
 protectedStaticPages.forEach((routePath) => {
@@ -3645,17 +3463,6 @@ app.get("/api/metodo-doppio-30", requireApprovedApi, async (req, res) => {
   }
 });
 
-
-app.get("/api/metodo-cappuccini", requireApprovedApi, async (req, res) => {
-  try {
-    const estrazioni = await getAllEstrazioni();
-    const payload = getPrevisioniTavolaCappuccini(estrazioni);
-    res.json(hasOperationalSignalsForMethod(estrazioni, "Metodo Tavola dei Cappuccini") ? payload : clearMethodPayloadIfExpired(payload));
-  } catch (error) {
-    console.error("Errore metodo tavola dei cappuccini:", error);
-    res.status(500).json({ errore: "Impossibile calcolare il metodo Tavola dei Cappuccini", dettaglio: error.message });
-  }
-});
 
 app.get("/api/metodo-venere", requireApprovedApi, async (req, res) => {
   try {
