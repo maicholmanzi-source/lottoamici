@@ -9,14 +9,29 @@ function renderPills(numeri) {
 }
 
 function renderPiramide(steps = []) {
-  return steps
-    .map((row, index) => `
-      <div class="numbers-row">
-        <span class="badge">Livello ${index + 1}</span>
-        ${renderPills(row)}
-      </div>
-    `)
-    .join("");
+  return `
+    <div class="pyramid-stack">
+      ${steps
+        .map(
+          (row, index) => `
+            <div class="pyramid-level">
+              <span class="badge">Livello ${index + 1}</span>
+              <div class="numbers-row">${renderPills(row)}</div>
+            </div>
+          `
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function renderDataBox(label, values, accent = "") {
+  return `
+    <div class="cappuccini-data-box ${accent}">
+      <span>${label}</span>
+      <div class="numbers-row">${renderPills(values)}</div>
+    </div>
+  `;
 }
 
 async function caricaMetodoCappuccini() {
@@ -43,14 +58,39 @@ function renderMetodoCappuccini(data) {
   }
 
   riepilogo.innerHTML = `
-    <h2>Riepilogo</h2>
-    <p><strong>Metodo:</strong> ${data.metodo}</p>
-    <p><strong>Data segnale:</strong> ${data.estrazioneRilevamento.dataTesto}</p>
-    <p><strong>Concorso:</strong> ${data.estrazioneRilevamento.concorso}</p>
+    <div class="method-summary-header">
+      <div>
+        <p class="method-overline">Metodo premium</p>
+        <h2>Tavola dei Cappuccini</h2>
+      </div>
+      <span class="method-header-chip">Schema operativo</span>
+    </div>
+    <div class="cappuccini-summary-grid">
+      <div class="cappuccini-summary-box">
+        <span>Data segnale</span>
+        <strong>${data.estrazioneRilevamento.dataTesto}</strong>
+        <small>Ultima estrazione utile rilevata</small>
+      </div>
+      <div class="cappuccini-summary-box">
+        <span>Concorso</span>
+        <strong>${data.estrazioneRilevamento.concorso}</strong>
+        <small>Base del calcolo automatico</small>
+      </div>
+      <div class="cappuccini-summary-box">
+        <span>Ruote elaborate</span>
+        <strong>${data.previsioni.length}</strong>
+        <small>Tutte le ruote con previsione attiva</small>
+      </div>
+      <div class="cappuccini-summary-box">
+        <span>Finestra di gioco</span>
+        <strong>6 colpi</strong>
+        <small>Operatività suggerita dal sito</small>
+      </div>
+    </div>
     <div class="badges">
-      <span class="badge">Ruote elaborate: ${data.previsioni.length}</span>
-      <span class="badge">Colpi massimi: 6</span>
+      <span class="badge">Piramidazione completa della cinquina</span>
       <span class="badge">Somma magica: 3×piramidato con fuori 90</span>
+      <span class="badge">Ambo guida con vertibile e triade simmetrica</span>
     </div>
   `;
 
@@ -60,31 +100,42 @@ function renderMetodoCappuccini(data) {
   }
 
   listaCappuccini.innerHTML = data.previsioni
-    .map((item) => `
-      <div class="card">
-        <h3>${item.ruota}</h3>
-        <p><strong>Cinquina di partenza:</strong></p>
-        <div class="numbers-row">${renderPills(item.cinquina || [])}</div>
+    .map(
+      (item) => `
+        <article class="card cappuccini-card">
+          <div class="method-summary-header">
+            <div>
+              <p class="method-overline">Ruota in evidenza</p>
+              <h3>${item.ruota}</h3>
+            </div>
+            <span class="method-header-chip">Previsione attiva</span>
+          </div>
 
-        <p><strong>Piramidazione:</strong></p>
-        ${renderPiramide(item.piramide || [])}
+          <div class="cappuccini-flow">
+            <div class="cappuccini-stage">
+              <h4>Cinquina di partenza</h4>
+              <div class="numbers-row">${renderPills(item.cinquina || [])}</div>
+            </div>
+            <div class="cappuccini-stage cappuccini-stage--pyramid">
+              <h4>Piramidazione</h4>
+              ${renderPiramide(item.piramide || [])}
+            </div>
+          </div>
 
-        <p><strong>Numero piramidato:</strong></p>
-        <div class="numbers-row">${renderPills([item.numeroPiramidato])}</div>
+          <div class="cappuccini-data-grid">
+            ${renderDataBox("Numero piramidato", [item.numeroPiramidato], "accent-box")}
+            ${renderDataBox("Somma magica e vertibile", [item.sommaMagica, item.vertibileSomma])}
+            ${renderDataBox("Triade simmetrica", item.triadeSimmetrica || [])}
+            ${renderDataBox("Ambate suggerite", item.ambate || [], "accent-box")}
+          </div>
 
-        <p><strong>Somma magica e vertibile:</strong></p>
-        <div class="numbers-row">${renderPills([item.sommaMagica, item.vertibileSomma])}</div>
-
-        <p><strong>Triade simmetrica:</strong></p>
-        <div class="numbers-row">${renderPills(item.triadeSimmetrica || [])}</div>
-
-        <p><strong>Ambate suggerite:</strong></p>
-        <div class="numbers-row">${renderPills(item.ambate || [])}</div>
-
-        <p><strong>Ambo guida:</strong></p>
-        <div class="numbers-row">${renderPills(item.ambo || [])}</div>
-      </div>
-    `)
+          <div class="cappuccini-ambo-box">
+            <span>Ambo guida</span>
+            <div class="numbers-row">${renderPills(item.ambo || [])}</div>
+          </div>
+        </article>
+      `
+    )
     .join("");
 }
 

@@ -6,8 +6,8 @@
   <title>Metodo Tavola dei Cappuccini</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body>
-  <header class="hero">
+<body class="app-page method-detail-page cappuccini-page">
+  <header class="hero inner-hero">
     <nav class="nav">
       <a href="/">Home</a>
       <a href="/schedine-pronte.html">Schedine pronte</a>
@@ -18,7 +18,7 @@
     </nav>
 
     <h1>Tavola dei Cappuccini</h1>
-    <p>Versione automatizzata del sito ispirata alla Tavola del Cappuccino</p>
+    <p>Versione automatizzata premium del sito ispirata alla Tavola dei Cappuccini</p>
   </header>
 
   <main class="container">
@@ -38,7 +38,7 @@
       </p>
     </section>
 
-    <section class="controls">
+    <section class="controls card controls-card">
       <button id="aggiorna">Aggiorna previsioni</button>
     </section>
 
@@ -46,8 +46,13 @@
       Caricamento...
     </section>
 
-    <section>
-      <h2>Previsioni per ruota</h2>
+    <section class="method-results-section">
+      <div class="section-title-row">
+        <div>
+          <h2>Previsioni per ruota</h2>
+          <p class="muted">Schema operativo completo: cinquina, piramide, somma magica, vertibile, triade e ambo guida.</p>
+        </div>
+      </div>
       <div id="listaCappuccini" class="cards"></div>
     </section>
   </main>
