@@ -268,6 +268,13 @@ const METHOD_META = {
     descrizione: "Scatta quando compare il 30 in pari posizione e restituisce terzine derivate.",
     focus: "Terzine"
   },
+  "Metodo Centurie di Nostradamus": {
+    slug: "centurie-nostradamus",
+    shortName: "Centurie Nostradamus",
+    path: "/metodo-centurie-nostradamus.html",
+    descrizione: "Versione automatizzata su ruote consecutive con somma dei primi, somma dei quinti e fisso +1.",
+    focus: "Terzine"
+  },
   "Metodo Venere": {
     slug: "venere",
     shortName: "Venere",
@@ -554,6 +561,22 @@ function uniqueNumbers(numeri) {
   return [...new Set(numeri)];
 }
 
+function buildFixedSizeUniqueNumbers(values = [], target = 3) {
+  const result = uniqueNumbers(
+    (values || [])
+      .map((value) => normalizeLottoNumber(Number(value)))
+      .filter((value) => Number.isFinite(value) && value >= 1 && value <= 90)
+  );
+
+  let cursor = result[result.length - 1] || 1;
+  while (result.length < target) {
+    cursor = shiftLotto(cursor, 1);
+    if (!result.includes(cursor)) result.push(cursor);
+  }
+
+  return result.slice(0, target).sort((a, b) => a - b);
+}
+
 function findPairsAtDistance45(cinquina = []) {
   const pairs = [];
   for (let i = 0; i < cinquina.length; i += 1) {
@@ -598,6 +621,29 @@ function buildFlorentiaViolaFromCinquina(cinquina = []) {
     abbinamento2,
     abbinamento3,
     ambi
+  };
+}
+
+function buildCenturieNostradamusFromCinquine(cinquina1 = [], cinquina2 = []) {
+  if (!Array.isArray(cinquina1) || !Array.isArray(cinquina2) || cinquina1.length !== 5 || cinquina2.length !== 5) return null;
+
+  const sommaPrimi = fuori90(cinquina1[0] + cinquina2[0]);
+  const sommaQuinti = fuori90(cinquina1[4] + cinquina2[4]);
+  const fissoNostradamus = shiftLotto(sommaQuinti, 1);
+  const terzinaBase = buildFixedSizeUniqueNumbers([sommaPrimi, sommaQuinti, fissoNostradamus], 3);
+  const terzinaVertibili = buildFixedSizeUniqueNumbers([
+    getVertibile(sommaPrimi),
+    getVertibile(sommaQuinti),
+    getVertibile(fissoNostradamus)
+  ], 3);
+
+  return {
+    sommaPrimi,
+    sommaQuinti,
+    fissoNostradamus,
+    terzinaBase,
+    terzinaVertibili,
+    numeri: uniqueNumbers([...terzinaBase, ...terzinaVertibili]).sort((a, b) => a - b)
   };
 }
 
@@ -1120,6 +1166,56 @@ function getPrevisioniDoppio30(estrazioni) {
   };
 }
 
+function getPrevisioniCenturieNostradamus(estrazioni) {
+  const estrazione = estrazioni[0] || null;
+  if (!estrazione) {
+    return {
+      metodo: "Metodo Centurie di Nostradamus",
+      descrizione:
+        "Versione automatizzata su ruote consecutive: somma dei primi estratti, somma dei quinti estratti, fisso di Nostradamus = somma dei quinti + 1 e terzina dei vertibili.",
+      estrazioneRilevamento: null,
+      risultati: []
+    };
+  }
+
+  const risultati = COPPIE_MONCO.map(([ruota1, ruota2]) => {
+    const cinquina1 = estrazione?.ruote?.[ruota1] || [];
+    const cinquina2 = estrazione?.ruote?.[ruota2] || [];
+    const calcolo = buildCenturieNostradamusFromCinquine(cinquina1, cinquina2);
+    if (!calcolo) return null;
+
+    return {
+      coppia: `${ruota1} - ${ruota2}`,
+      ruota1,
+      ruota2,
+      dataSegnale: estrazione.data,
+      dataSegnaleTesto: estrazione.dataTesto,
+      concorso: estrazione.concorso,
+      cinquina1,
+      cinquina2,
+      colpiPassati: 0,
+      colpiRimasti: 6,
+      previsioni: [{
+        ...calcolo,
+        ruoteDiGioco: [ruota1, ruota2],
+        colpiMassimi: 6
+      }]
+    };
+  }).filter(Boolean);
+
+  return {
+    metodo: "Metodo Centurie di Nostradamus",
+    descrizione:
+      "Versione automatizzata su ruote consecutive: somma dei primi estratti, somma dei quinti estratti, fisso di Nostradamus = somma dei quinti + 1 e terzina dei vertibili.",
+    estrazioneRilevamento: {
+      data: estrazione.data,
+      dataTesto: estrazione.dataTesto,
+      concorso: estrazione.concorso
+    },
+    risultati
+  };
+}
+
 function getPrevisioniVenere(estrazioni) {
   const estrazione = estrazioni[0] || null;
   if (!estrazione) {
@@ -1491,6 +1587,29 @@ function buildGiocateGroups(estrazioni) {
           dataSegnaleTesto: item.dataSegnaleTesto,
           concorso: item.concorso,
           colpiPassati: item.colpiPassati
+        }))
+      )))
+    });
+  }
+
+  const centurieNostradamus = getPrevisioniCenturieNostradamus(estrazioni);
+  if (centurieNostradamus?.risultati?.length) {
+    groups.push({
+      nome: "Metodo Centurie di Nostradamus",
+      items: sortBySignalDateDesc(centurieNostradamus.risultati.flatMap((item) => (
+        (item.previsioni || []).map((prev) => ({
+          titolo: item.coppia,
+          sottotitolo: `Concorso ${item.concorso}`,
+          descrizione: "Terzina base e terzina dei vertibili",
+          numeri: prev.numeri || uniqueNumbers([...(prev.terzinaBase || []), ...(prev.terzinaVertibili || [])]),
+          ruote: prev.ruoteDiGioco || [item.ruota1, item.ruota2],
+          giocate: [prev.terzinaBase, prev.terzinaVertibili].filter(Boolean),
+          dataSegnale: item.dataSegnale,
+          dataSegnaleTesto: item.dataSegnaleTesto,
+          concorso: item.concorso,
+          colpiMassimi: prev.colpiMassimi,
+          colpiPassati: item.colpiPassati,
+          colpiRimasti: item.colpiRimasti
         }))
       )))
     });
@@ -2312,6 +2431,24 @@ function buildHistoricalMethodSignals(estrazioni) {
           colpiPassati
         });
       });
+
+      const centurie = buildCenturieNostradamusFromCinquine(cinquina1, cinquina2);
+      if (centurie) {
+        signals.push({
+          metodo: "Metodo Centurie di Nostradamus",
+          titolo: `${ruota1} - ${ruota2}`,
+          sottotitolo: `Concorso ${estrazione.concorso}`,
+          descrizione: "Terzina base e terzina dei vertibili",
+          numeri: centurie.numeri,
+          ruote: [ruota1, ruota2],
+          giocate: [centurie.terzinaBase, centurie.terzinaVertibili],
+          dataSegnale: estrazione.data,
+          dataSegnaleTesto: estrazione.dataTesto,
+          concorso: estrazione.concorso,
+          colpiMassimi: 6,
+          colpiPassati
+        });
+      }
     });
 
     COPPIE_GEMELLI.forEach(([ruota1, ruota2]) => {
@@ -3036,6 +3173,7 @@ const protectedStaticPages = [
   "/metodo-azzerati.html",
   "/metodo-don-pedro.html",
   "/metodo-doppio-30.html",
+  "/metodo-centurie-nostradamus.html",
   "/metodo-gemelli.html",
   "/metodo-isotopi.html",
   "/metodo-monco.html",
@@ -3463,6 +3601,16 @@ app.get("/api/metodo-doppio-30", requireApprovedApi, async (req, res) => {
   }
 });
 
+app.get("/api/metodo-centurie-nostradamus", requireApprovedApi, async (req, res) => {
+  try {
+    const estrazioni = await getAllEstrazioni();
+    const payload = getPrevisioniCenturieNostradamus(estrazioni);
+    res.json(hasOperationalSignalsForMethod(estrazioni, "Metodo Centurie di Nostradamus") ? payload : clearMethodPayloadIfExpired(payload));
+  } catch (error) {
+    console.error("Errore metodo Centurie di Nostradamus:", error);
+    res.status(500).json({ errore: "Impossibile calcolare il metodo Centurie di Nostradamus", dettaglio: error.message });
+  }
+});
 
 app.get("/api/metodo-venere", requireApprovedApi, async (req, res) => {
   try {
