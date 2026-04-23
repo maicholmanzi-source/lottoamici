@@ -26,6 +26,19 @@ const homeChatInput = document.getElementById("homeChatInput");
 const homeChatList = document.getElementById("homeChatList");
 const homeChatFeedback = document.getElementById("homeChatFeedback");
 const homeChatCount = document.getElementById("homeChatCount");
+const methodSearchInput = document.getElementById("methodSearch");
+const methodFocusFilter = document.getElementById("methodFocusFilter");
+const methodStateFilter = document.getElementById("methodStateFilter");
+const methodSortSelect = document.getElementById("methodSort");
+const methodsFilterInfo = document.getElementById("methodsFilterInfo");
+const playSearchInput = document.getElementById("playSearch");
+const playStatusFilter = document.getElementById("playStatusFilter");
+const playWheelFilter = document.getElementById("playWheelFilter");
+const playMethodFilter = document.getElementById("playMethodFilter");
+const playSortSelect = document.getElementById("playSort");
+const playFilterInfo = document.getElementById("playFilterInfo");
+let methodsStatsCache = [];
+let giocateMetodiCache = [];
 let homeChatPoll = null;
 let homeChatLastRefresh = 0;
 const HOME_CHAT_POLL_MS = 8000;
@@ -442,17 +455,184 @@ function evaluatePlayItem(item, latestExtraction) {
   };
 }
 
+function normalizeText(value = "") {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .trim();
+}
+
+function parseComparableDate(value) {
+  if (!value) return 0;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+}
+
+function getMethodStateMeta(method = {}) {
+  const stats = method.liveStats || method.stats || {};
+  const activeCount = (stats.ongoing || 0) + (stats.partial || 0);
+  if (activeCount > 0) {
+    return { key: 'active', label: 'Attivo', tone: 'neutral' };
+  }
+  if ((stats.exactHits || 0) > 0) {
+    return { key: 'hit', label: 'Con prese', tone: 'success' };
+  }
+  return { key: 'observed', label: 'In osservazione', tone: 'partial' };
+}
+
+function populateMethodFocusOptions(methods = []) {
+  if (!methodFocusFilter) return;
+  const current = methodFocusFilter.value || 'all';
+  const options = [...new Set(methods.map((method) => method.focus).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'it'));
+  methodFocusFilter.innerHTML = ['<option value="all">Tutti i focus</option>', ...options.map((focus) => `<option value="${focus}">${focus}</option>`)].join('');
+  methodFocusFilter.value = options.includes(current) ? current : 'all';
+}
+
+function getSortedMethods(methods = []) {
+  const sortKey = methodSortSelect?.value || 'reliability';
+  return [...methods].sort((a, b) => {
+    const aStats = a.liveStats || a.stats || {};
+    const bStats = b.liveStats || b.stats || {};
+    if (sortKey === 'name') {
+      return (a.nome || '').localeCompare(b.nome || '', 'it');
+    }
+    if (sortKey === 'hits') {
+      const diff = (bStats.exactHits || 0) - (aStats.exactHits || 0);
+      if (diff) return diff;
+    } else if (sortKey === 'colpo') {
+      const aColpo = aStats.averageHitColpo ?? 999;
+      const bColpo = bStats.averageHitColpo ?? 999;
+      if (aColpo !== bColpo) return aColpo - bColpo;
+    } else {
+      const diff = (bStats.reliability ?? -1) - (aStats.reliability ?? -1);
+      if (diff) return diff;
+    }
+    if ((bStats.exactHits || 0) !== (aStats.exactHits || 0)) {
+      return (bStats.exactHits || 0) - (aStats.exactHits || 0);
+    }
+    return (a.nome || '').localeCompare(b.nome || '', 'it');
+  });
+}
+
+function updateMethodsView() {
+  if (!methodsStatsGrid) return;
+  const search = normalizeText(methodSearchInput?.value || '');
+  const focus = methodFocusFilter?.value || 'all';
+  const state = methodStateFilter?.value || 'all';
+  const filtered = methodsStatsCache.filter((method) => {
+    const stateMeta = getMethodStateMeta(method);
+    const haystack = normalizeText([method.nome, method.descrizione, method.focus, method.shortName].join(' '));
+    if (search && !haystack.includes(search)) return false;
+    if (focus !== 'all' && method.focus !== focus) return false;
+    if (state !== 'all' && stateMeta.key !== state) return false;
+    return true;
+  });
+
+  const sorted = getSortedMethods(filtered);
+  renderMethodsStats(sorted);
+
+  if (methodsFilterInfo) {
+    const total = methodsStatsCache.length;
+    methodsFilterInfo.textContent = sorted.length
+      ? `Mostro ${sorted.length} metodi su ${total}. Filtri attivi: ${focus === 'all' ? 'nessun focus specifico' : focus}${state !== 'all' ? ` · stato ${getMethodStateMeta({ liveStats: { ongoing: state === 'active' ? 1 : 0, exactHits: state === 'hit' ? 1 : 0 } }).label.toLowerCase()}` : ''}.`
+      : `Nessun metodo trovato con i filtri attuali su ${total} metodi disponibili.`;
+  }
+}
+
+function initMethodFilters() {
+  [methodSearchInput, methodFocusFilter, methodStateFilter, methodSortSelect].forEach((element) => {
+    element?.addEventListener(element === methodSearchInput ? 'input' : 'change', updateMethodsView);
+  });
+}
+
+function populatePlayFilters(groups = []) {
+  if (playWheelFilter) {
+    const currentWheel = playWheelFilter.value || 'all';
+    const wheels = [...new Set(groups.flatMap((group) => (group.items || []).flatMap((item) => item.ruote || [])))].sort((a, b) => a.localeCompare(b, 'it'));
+    playWheelFilter.innerHTML = ['<option value="all">Tutte le ruote</option>', ...wheels.map((wheel) => `<option value="${wheel}">${wheel}</option>`)].join('');
+    playWheelFilter.value = wheels.includes(currentWheel) ? currentWheel : 'all';
+  }
+  if (playMethodFilter) {
+    const currentMethod = playMethodFilter.value || 'all';
+    const methods = [...new Set(groups.map((group) => group.nome).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'it'));
+    playMethodFilter.innerHTML = ['<option value="all">Tutti i metodi</option>', ...methods.map((method) => `<option value="${method}">${method}</option>`)].join('');
+    playMethodFilter.value = methods.includes(currentMethod) ? currentMethod : 'all';
+  }
+}
+
+function getFilteredPlayGroups(groups = []) {
+  const search = normalizeText(playSearchInput?.value || '');
+  const status = playStatusFilter?.value || 'all';
+  const wheel = playWheelFilter?.value || 'all';
+  const method = playMethodFilter?.value || 'all';
+  const sortKey = playSortSelect?.value || 'rank';
+
+  let filtered = groups
+    .filter((group) => method === 'all' || group.nome === method)
+    .map((group) => ({
+      ...group,
+      items: (group.items || []).filter((item) => {
+        const haystack = normalizeText([group.nome, item.titolo, item.sottotitolo, item.descrizione, ...(item.ruote || [])].join(' '));
+        if (search && !haystack.includes(search)) return false;
+        if (status !== 'all' && item.status?.outcome !== status) return false;
+        if (wheel !== 'all' && !(item.ruote || []).includes(wheel)) return false;
+        return true;
+      })
+    }))
+    .filter((group) => group.items.length);
+
+  filtered = filtered.map((group) => ({
+    ...group,
+    items: [...group.items].sort((a, b) => parseComparableDate(b.dataSegnale) - parseComparableDate(a.dataSegnale))
+  }));
+
+  filtered.sort((a, b) => {
+    if (sortKey === 'recent') {
+      const aDate = parseComparableDate(a.items?.[0]?.dataSegnale);
+      const bDate = parseComparableDate(b.items?.[0]?.dataSegnale);
+      if (bDate !== aDate) return bDate - aDate;
+    }
+    const aRank = a.rank ?? 999;
+    const bRank = b.rank ?? 999;
+    if (aRank !== bRank) return aRank - bRank;
+    return (a.nome || '').localeCompare(b.nome || '', 'it');
+  });
+
+  return filtered;
+}
+
+function updatePlayFiltersView() {
+  if (!giocateMetodi) return;
+  const filteredGroups = getFilteredPlayGroups(giocateMetodiCache);
+  renderMetodi(filteredGroups);
+  if (playFilterInfo) {
+    const totalGroups = giocateMetodiCache.length;
+    const totalItems = filteredGroups.reduce((acc, group) => acc + (group.items?.length || 0), 0);
+    playFilterInfo.textContent = filteredGroups.length
+      ? `Mostro ${filteredGroups.length} metodi e ${totalItems} giocate filtrate su ${totalGroups} gruppi disponibili.`
+      : `Nessuna giocata trovata con i filtri selezionati.`;
+  }
+}
+
+function initPlayFilters() {
+  [playSearchInput, playStatusFilter, playWheelFilter, playMethodFilter, playSortSelect].forEach((element) => {
+    element?.addEventListener(element === playSearchInput ? 'input' : 'change', updatePlayFiltersView);
+  });
+}
+
 function renderMetodi(groups) {
   if (!giocateMetodi) return;
 
   if (!groups.length) {
-    giocateMetodi.innerHTML = `<div class="card">Nessuna giocata disponibile dai metodi.</div>`;
+    giocateMetodi.innerHTML = `<div class="card">Nessuna giocata disponibile con i filtri attuali.</div>`;
     return;
   }
 
   giocateMetodi.innerHTML = groups
     .map((group) => {
-      const entries = limitItems(group.items)
+      const visibleItems = limitItems(group.items || [], 6);
+      const entries = visibleItems
         .map((item) => {
           const status = item.status || {
             tone: "neutral",
@@ -475,7 +655,7 @@ function renderMetodi(groups) {
               <span class="result-chip result-chip-${status.tone}">${status.label}</span>
               <p>${status.detail}</p>
               <div class="status-meta-list">
-                <div class="status-meta-item"><strong>Segnale</strong><span>${status.meta?.segnale || "N/D"}</span></div>
+                <div class="status-meta-item"><strong>Segnale</strong><span>${status.meta?.segnale || item.dataSegnaleTesto || "N/D"}</span></div>
                 <div class="status-meta-item"><strong>Finestra</strong><span>${status.meta?.finestra || "N/D"}</span></div>
                 <div class="status-meta-item"><strong>Colpi</strong><span>${status.meta?.avanzamento || "N/D"}</span></div>
               </div>
@@ -487,6 +667,7 @@ function renderMetodi(groups) {
 
       const reliabilityText = formatPercent(group.reliability);
       const rankText = group.rank ? `${group.rank}° posto` : "Storico";
+      const totalItems = group.items?.length || 0;
       return `
         <div class="card method-summary-card ${group.podiumClass || ""}">
           <div class="method-summary-header">
@@ -499,6 +680,7 @@ function renderMetodi(groups) {
           <div class="method-podium-meta">
             <span class="method-rank-pill">${rankText}</span>
             <span class="method-reliability-pill">Affidabilità ${reliabilityText}</span>
+            <span class="method-count-pill">${totalItems} segnal${totalItems === 1 ? 'e' : 'i'}</span>
           </div>
           ${entries}
         </div>
@@ -527,7 +709,9 @@ async function caricaGiocateMetodi() {
       }
     }
 
-    renderMetodi(groups);
+    giocateMetodiCache = groups;
+    populatePlayFilters(groups);
+    updatePlayFiltersView();
   } catch (error) {
     giocateMetodi.innerHTML = `<div class="card"><strong>Errore:</strong> ${error.message}</div>`;
     if (esitoUltimaEstrazione) {
@@ -776,24 +960,10 @@ function renderMethodsStats(methods = []) {
     return;
   }
 
-  const rankedMethods = [...methods].sort((a, b) => {
-    const aStats = a.liveStats || a.stats || {};
-    const bStats = b.liveStats || b.stats || {};
-    const aReliability = aStats.reliability ?? -1;
-    const bReliability = bStats.reliability ?? -1;
-    if (bReliability !== aReliability) return bReliability - aReliability;
-    const aHits = aStats.exactHits || 0;
-    const bHits = bStats.exactHits || 0;
-    if (bHits !== aHits) return bHits - aHits;
-    const aColpo = aStats.averageHitColpo ?? 999;
-    const bColpo = bStats.averageHitColpo ?? 999;
-    if (aColpo !== bColpo) return aColpo - bColpo;
-    return (bStats.completedSignals || 0) - (aStats.completedSignals || 0);
-  });
-
-  methodsStatsGrid.innerHTML = rankedMethods
+  methodsStatsGrid.innerHTML = methods
     .map((method, index) => {
       const stats = method.liveStats || method.stats || {};
+      const stateMeta = getMethodStateMeta(method);
       const podiumClass = index === 0 ? " stats-card--gold" : index === 1 ? " stats-card--silver" : index === 2 ? " stats-card--bronze" : "";
       const podiumLabel = index === 0 ? "1° per affidabilità" : index === 1 ? "2° per affidabilità" : index === 2 ? "3° per affidabilità" : "Storico";
       return `
@@ -804,6 +974,10 @@ function renderMethodsStats(methods = []) {
             <h3>${method.nome}</h3>
           </div>
           <span class="method-header-chip">${podiumLabel}</span>
+        </div>
+        <div class="inline-badges">
+          <span class="badge badge-soft">${method.focus || 'Metodo'}</span>
+          <span class="result-chip result-chip-${stateMeta.tone}">${stateMeta.label}</span>
         </div>
         <p>${method.descrizione || ""}</p>
         <div class="stats-grid">
@@ -839,7 +1013,9 @@ async function caricaStatisticheMetodi() {
     }
 
     if (methodsStatsGrid) {
-      renderMethodsStats(data.methods || []);
+      methodsStatsCache = data.methods || [];
+      populateMethodFocusOptions(methodsStatsCache);
+      updateMethodsView();
       if (methodsStatsInfo) {
         const updated = data.updatedAt ? `${data.updatedAt.dataTesto} (concorso ${data.updatedAt.concorso})` : "dato non disponibile";
         methodsStatsInfo.textContent = `Classifica live del mese corrente aggiornata all'ultima estrazione disponibile. Ultima estrazione usata: ${updated}. I segnali scaduti vengono esclusi dalle sezioni operative.`;
@@ -1195,6 +1371,8 @@ function initMyTicketsPage() {
 }
 
 function bootPageData() {
+  initMethodFilters();
+  initPlayFilters();
   caricaEstrazioni();
   caricaGiocateMetodi();
   caricaStatisticheMetodi();

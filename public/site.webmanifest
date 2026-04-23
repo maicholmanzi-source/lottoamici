@@ -1,0 +1,9 @@
+{
+  "name": "Metodi Lotto",
+  "short_name": "Metodi Lotto",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4f6f8",
+  "theme_color": "#123a63",
+  "description": "Metodi Lotto, giocate attive, diretta estrazioni e verifica schedine."
+}

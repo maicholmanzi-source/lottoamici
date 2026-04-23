@@ -4,7 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#123a63" />
-  <title>Giocate secondo i metodi</title>
+  <meta name="description" content="Controlla le giocate generate dai metodi Lotto con stato reale, ruote, colpi di gioco e filtri rapidi." />
+  <meta name="robots" content="index,follow" />
+  <meta property="og:title" content="Giocate Lotto secondo i metodi" />
+  <meta property="og:description" content="Riepilogo automatico delle giocate attive con filtri per stato, ruota e metodo." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/home-page-bg.png" />
+  <title>Giocate Lotto con stato reale e filtri</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="/site.webmanifest" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body class="app-page plays-page">
@@ -20,7 +28,7 @@
     </nav>
 
     <h1>Giocate secondo i metodi</h1>
-    <p>Riepilogo automatico delle giocate attive con controllo esiti e colpi di gioco</p>
+    <p>Riepilogo automatico delle giocate attive con controllo esiti, ruote e colpi di gioco.</p>
     <p id="esitoUltimaEstrazione" class="muted">Verifica risultati in caricamento...</p>
   </header>
 
@@ -35,7 +43,55 @@
         </div>
         <button id="aggiornaMetodi" type="button">Aggiorna giocate</button>
       </div>
+    </section>
 
+    <section class="card filters-card">
+      <div class="section-title-row">
+        <div>
+          <h2>Filtri operativi</h2>
+          <p class="muted">Usali per vedere solo ciò che ti serve: metodo, ruota, stato o segnale più recente.</p>
+        </div>
+      </div>
+      <div class="filters-toolbar">
+        <label class="toolbar-field toolbar-search">
+          <span>Cerca</span>
+          <input id="playSearch" type="search" placeholder="Metodo, ruota o descrizione..." />
+        </label>
+        <label class="toolbar-field">
+          <span>Stato</span>
+          <select id="playStatusFilter">
+            <option value="all">Tutti gli stati</option>
+            <option value="ongoing">In corso</option>
+            <option value="hit">Prese</option>
+            <option value="expired">Scadute</option>
+            <option value="partial">Parziali</option>
+            <option value="miss">Non prese</option>
+          </select>
+        </label>
+        <label class="toolbar-field">
+          <span>Ruota</span>
+          <select id="playWheelFilter">
+            <option value="all">Tutte le ruote</option>
+          </select>
+        </label>
+        <label class="toolbar-field">
+          <span>Metodo</span>
+          <select id="playMethodFilter">
+            <option value="all">Tutti i metodi</option>
+          </select>
+        </label>
+        <label class="toolbar-field">
+          <span>Ordina per</span>
+          <select id="playSort">
+            <option value="rank">Ordine consigliato</option>
+            <option value="recent">Segnale più recente</option>
+          </select>
+        </label>
+      </div>
+      <p id="playFilterInfo" class="muted">Sto preparando i filtri delle giocate...</p>
+    </section>
+
+    <section>
       <div id="giocateMetodi" class="cards">
         <div class="card">Caricamento giocate...</div>
       </div>

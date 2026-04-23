@@ -4,7 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#123a63" />
-  <title>Ultime 10 estrazioni Lotto</title>
+  <meta name="description" content="Metodi Lotto, giocate attive, diretta estrazioni, schedine pronte e verifica schedina in un unico sito aggiornato automaticamente." />
+  <meta name="robots" content="index,follow" />
+  <meta property="og:title" content="Metodi Lotto, giocate e diretta estrazioni" />
+  <meta property="og:description" content="Consulta metodi, giocate attive, ultime estrazioni, diretta progressiva e verifica schedine da un unico pannello." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/home-page-bg.png" />
+  <title>Metodi Lotto, giocate, diretta estrazioni e verifica schedine</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="/site.webmanifest" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body class="home-page app-page">
@@ -19,12 +27,62 @@
       <a href="/fai-3-fai-4.html">Fai 3 Fai 4</a>
     </nav>
 
-    <h1>Ultime 10 estrazioni del Lotto</h1>
-    <p>Dati aggiornati in automatico</p>
+    <p class="hero-kicker">Pannello operativo Lotto</p>
+    <h1>Metodi, giocate e diretta estrazioni in un unico sito</h1>
+    <p class="hero-lead">Controlla i metodi attivi, segui l'ultima estrazione, genera schedine pronte e verifica i risultati con un'interfaccia più chiara e veloce.</p>
+    <div class="hero-actions quick-hero-actions">
+      <a class="method-button" href="/metodi.html">Apri i metodi</a>
+      <a class="method-button secondary-button" href="/giocate.html">Vedi le giocate</a>
+      <a class="method-button secondary-button" href="/verifica-schedina.html">Verifica schedina</a>
+    </div>
     <div id="homeAccessActions" class="hero-actions home-access-actions"></div>
   </header>
 
   <main class="container">
+    <section class="card home-tools-card">
+      <div class="section-title-row">
+        <div>
+          <h2>Strumenti principali</h2>
+          <p class="muted">Qui trovi subito le aree più utili del sito, senza dover cercare tra le pagine.</p>
+        </div>
+      </div>
+      <div class="quick-tools-grid">
+        <a class="quick-tool-card" href="/metodi.html">
+          <strong>Metodi</strong>
+          <span>Statistiche live, affidabilità e accesso rapido ai metodi automatici.</span>
+        </a>
+        <a class="quick-tool-card" href="/giocate.html">
+          <strong>Giocate attive</strong>
+          <span>Stato reale delle giocate: in corso, presa, scaduta o parziale.</span>
+        </a>
+        <a class="quick-tool-card" href="/estrazioni-diretta.html">
+          <strong>Diretta estrazioni</strong>
+          <span>Ultima estrazione completa, refresh automatico e replay numero per numero.</span>
+        </a>
+        <a class="quick-tool-card" href="/verifica-schedina.html">
+          <strong>Verifica schedine</strong>
+          <span>Controllo rapido della schedina e strumenti di supporto per gli utenti registrati.</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="card info-strip-card">
+      <div class="info-strip-grid">
+        <div>
+          <strong>Aggiornamento chiaro</strong>
+          <p class="muted">Ogni sezione mostra dati, concorso e stato dell'ultima estrazione disponibile.</p>
+        </div>
+        <div>
+          <strong>Metodo + operatività</strong>
+          <p class="muted">Non solo teoria: i metodi sono affiancati da giocate, esiti e schedine pronte.</p>
+        </div>
+        <div>
+          <strong>Più trasparenza</strong>
+          <p class="muted">Etichette più visibili per capire subito se una giocata è attiva, presa o scaduta.</p>
+        </div>
+      </div>
+    </section>
+
     <section id="homeChatSection" class="card home-chat-card" hidden>
       <div class="section-title-row home-chat-heading">
         <div>
@@ -59,7 +117,44 @@
       </div>
     </section>
 
+    <section class="card steps-card">
+      <div class="section-title-row">
+        <div>
+          <h2>Come usare il sito in modo rapido</h2>
+          <p class="muted">Un percorso semplice per arrivare dai dati alla giocata in pochi passaggi.</p>
+        </div>
+      </div>
+      <div class="step-grid">
+        <article class="step-card">
+          <span class="step-number">1</span>
+          <h3>Scegli il metodo</h3>
+          <p>Apri la sezione Metodi e ordina per affidabilità o tipologia di giocata.</p>
+        </article>
+        <article class="step-card">
+          <span class="step-number">2</span>
+          <h3>Controlla lo stato</h3>
+          <p>Vai su Giocate per vedere subito colpi, finestra utile ed eventuali prese.</p>
+        </article>
+        <article class="step-card">
+          <span class="step-number">3</span>
+          <h3>Verifica e archivia</h3>
+          <p>Usa la verifica schedina e l'area personale per tenere tutto più ordinato.</p>
+        </article>
+      </div>
+    </section>
+
     <section id="homeControls" class="controls card controls-card">
+      <div class="controls-heading-block">
+        <div>
+          <h2>Ultime estrazioni del Lotto</h2>
+          <p id="homeVisibilityNote" class="muted">Le ultime 10 estrazioni complete del Lotto, filtrabili per ruota.</p>
+        </div>
+        <div id="resultsActions" class="hero-actions">
+          <a class="method-button" href="/schedine-pronte.html">Schedine pronte</a>
+          <a class="method-button secondary-button" href="/giocate.html">Vai alle giocate</a>
+          <a class="method-button secondary-button" href="/verifica-schedina.html">Verifica schedina / QR</a>
+        </div>
+      </div>
       <label for="ruota">Filtra per ruota:</label>
       <select id="ruota">
         <option value="">Tutte le ruote</option>
@@ -80,18 +175,16 @@
     </section>
 
     <section>
-      <div class="section-title-row">
-        <div>
-          <h2>Risultati</h2>
-          <p id="homeVisibilityNote" class="muted">Le ultime 10 estrazioni complete del Lotto.</p>
-        </div>
-        <div id="resultsActions" class="hero-actions">
-          <a class="method-button" href="/schedine-pronte.html">Schedine pronte</a>
-          <a class="method-button secondary-button" href="/giocate.html">Vai alle giocate</a>
-          <a class="method-button secondary-button" href="/verifica-schedina.html">Verifica schedina / QR</a>
-        </div>
-      </div>
       <div id="listaEstrazioni" class="cards"></div>
+    </section>
+
+    <section class="card disclaimer-card">
+      <h2>Lettura chiara delle sezioni</h2>
+      <ul class="compact-list">
+        <li><strong>Attivo / In corso</strong>: la finestra utile del metodo non è ancora terminata.</li>
+        <li><strong>Presa</strong>: il risultato è stato centrato entro i colpi previsti.</li>
+        <li><strong>Scaduta</strong>: la finestra utile è terminata senza presa completa.</li>
+      </ul>
     </section>
   </main>
 

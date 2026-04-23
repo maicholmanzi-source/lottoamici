@@ -4,7 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#123a63" />
-  <title>Metodi Lotto</title>
+  <meta name="description" content="Consulta tutti i metodi Lotto disponibili, confronta affidabilità, prese, colpo medio e stato operativo in una sola pagina." />
+  <meta name="robots" content="index,follow" />
+  <meta property="og:title" content="Metodi Lotto con statistiche live" />
+  <meta property="og:description" content="Filtra i metodi per focus, stato e affidabilità e apri in un click la pagina dedicata." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/home-page-bg.png" />
+  <title>Metodi Lotto con statistiche live</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="/site.webmanifest" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body class="app-page methods-page">
@@ -20,7 +28,7 @@
     </nav>
 
     <h1>Metodi Lotto</h1>
-    <p>Raccolta dei metodi disponibili con statistiche aggiornate</p>
+    <p>Statistiche più chiare, filtri rapidi e accesso immediato ai metodi automatici.</p>
   </header>
 
   <main class="container">
@@ -28,9 +36,49 @@
       <h2>Area Metodi</h2>
       <p>
         Da questa pagina puoi aprire rapidamente tutti i metodi disponibili,
-        vedere quali sono i più affidabili e consultare lo storico sintetico di prese e colpi.
+        confrontare affidabilità, prese e colpo medio e capire subito quali sono più operativi in questo momento.
       </p>
       <p id="methodsStatsInfo" class="muted">Sto caricando le statistiche dei metodi...</p>
+    </section>
+
+    <section class="card filters-card">
+      <div class="section-title-row">
+        <div>
+          <h2>Filtri rapidi</h2>
+          <p class="muted">Usa ricerca, focus e ordinamento per individuare più in fretta il metodo giusto.</p>
+        </div>
+      </div>
+      <div class="filters-toolbar">
+        <label class="toolbar-field toolbar-search">
+          <span>Cerca metodo</span>
+          <input id="methodSearch" type="search" placeholder="Es. Nostradamus, ambi, Firenze..." />
+        </label>
+        <label class="toolbar-field">
+          <span>Focus</span>
+          <select id="methodFocusFilter">
+            <option value="all">Tutti i focus</option>
+          </select>
+        </label>
+        <label class="toolbar-field">
+          <span>Stato</span>
+          <select id="methodStateFilter">
+            <option value="all">Tutti gli stati</option>
+            <option value="active">Attivi</option>
+            <option value="hit">Con prese nel periodo</option>
+            <option value="observed">In osservazione</option>
+          </select>
+        </label>
+        <label class="toolbar-field">
+          <span>Ordina per</span>
+          <select id="methodSort">
+            <option value="reliability">Affidabilità</option>
+            <option value="hits">Numero prese</option>
+            <option value="colpo">Colpo medio</option>
+            <option value="name">Nome</option>
+          </select>
+        </label>
+      </div>
+      <p id="methodsFilterInfo" class="muted">Sto preparando i filtri dei metodi...</p>
     </section>
 
     <section id="methodsStatsGrid" class="methods-grid">
