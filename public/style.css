@@ -2946,3 +2946,80 @@ body.home-page .section-title-row .muted {
     grid-template-columns: 1fr;
   }
 }
+
+.live-progress-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 12px;
+}
+
+.live-progress-toolbar .method-button,
+.live-progress-toolbar .secondary-button {
+  margin-top: 0;
+}
+
+.live-speed-label {
+  display: grid;
+  gap: 6px;
+  font-weight: 700;
+  color: #16365c;
+}
+
+.live-speed-label select {
+  min-width: 160px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #bfd1ea;
+  background: #fff;
+  font-size: 15px;
+}
+
+.live-progressive-card {
+  border: 1px solid rgba(13, 59, 102, 0.08);
+}
+
+.live-progress-meta-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.live-progress-badge {
+  background: #e8eefc;
+  color: #0d3b66;
+}
+
+.live-progress-wheel-box {
+  background: linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%);
+}
+
+.number-pill-hidden {
+  background: #d9e3f0;
+  color: #56708e;
+}
+
+.number-pill-revealed {
+  background: #0d3b66;
+}
+
+.number-pill-current {
+  background: #ffd166;
+  color: #1f2937;
+  box-shadow: 0 0 0 3px rgba(255, 209, 102, 0.28);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 640px) {
+  .live-progress-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .live-speed-label select {
+    width: 100%;
+  }
+}

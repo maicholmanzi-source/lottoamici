@@ -63,6 +63,33 @@
     <section class="card">
       <div class="section-title-row">
         <div>
+          <h2>Estrazione numero per numero</h2>
+          <p id="progressiveExtractionMeta" class="muted">Sto preparando la riproduzione progressiva dell'ultima estrazione...</p>
+        </div>
+      </div>
+      <div class="live-progress-toolbar">
+        <button id="progressivePlayButton" type="button" class="method-button">Avvia</button>
+        <button id="progressivePauseButton" type="button" class="method-button secondary-button">Pausa</button>
+        <button id="progressiveResetButton" type="button" class="method-button secondary-button">Ricomincia</button>
+        <label class="live-speed-label" for="progressiveSpeedSelect">
+          Velocità
+          <select id="progressiveSpeedSelect">
+            <option value="1800">Lenta</option>
+            <option value="1200" selected>Media</option>
+            <option value="700">Veloce</option>
+            <option value="350">Molto veloce</option>
+          </select>
+        </label>
+      </div>
+      <p id="progressiveExtractionStatus" class="muted">Caricamento della sequenza in corso...</p>
+      <div id="progressiveExtractionWrap" class="cards">
+        <div class="card subtle-card">Sto preparando la vista numero per numero...</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-title-row">
+        <div>
           <h2>Ultime estrazioni recenti</h2>
           <p class="muted">Vista rapida delle ultime estrazioni pubblicate.</p>
         </div>
