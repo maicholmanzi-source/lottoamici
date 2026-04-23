@@ -2875,3 +2875,74 @@ body.home-page .section-title-row .muted {
     justify-content: center;
   }
 }
+
+
+.live-top-grid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.live-status-card,
+.countdown-card,
+.live-extraction-card,
+.live-recent-card {
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.live-badge {
+  background: #dff7e8;
+  color: #175b2d;
+}
+
+.live-hero-actions {
+  justify-content: center;
+}
+
+.live-countdown-value {
+  font-size: clamp(30px, 6vw, 52px);
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #0d3b66;
+  margin: 10px 0 14px;
+}
+
+.live-wheel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+}
+
+.live-wheel-box {
+  min-height: 92px;
+}
+
+.live-mini-wheel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.live-mini-wheel-box {
+  background: #f6f9ff;
+}
+
+.live-mini-wheel-numbers {
+  margin-top: 6px;
+  line-height: 1.5;
+  font-weight: 600;
+  color: #16365c;
+}
+
+.subtle-card {
+  background: #f8fbff;
+}
+
+@media (max-width: 640px) {
+  .live-countdown-value {
+    font-size: 32px;
+  }
+
+  .live-wheel-grid,
+  .live-mini-wheel-grid {
+    grid-template-columns: 1fr;
+  }
+}

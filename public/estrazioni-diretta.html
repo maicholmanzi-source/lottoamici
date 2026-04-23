@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#123a63" />
+  <title>Estrazioni Lotto in diretta</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="app-page live-page">
+  <header class="hero inner-hero">
+    <nav class="nav">
+      <a href="/">Home</a>
+      <a href="/estrazioni-diretta.html" class="active">Diretta estrazioni</a>
+      <a href="/schedine-pronte.html">Schedine pronte</a>
+      <a href="/giocate.html">Giocate</a>
+      <a href="/verifica-schedina.html">Verifica schedina / QR</a>
+      <a href="/metodi.html">Metodi</a>
+      <a href="/fai-3-fai-4.html">Fai 3 Fai 4</a>
+    </nav>
+
+    <h1>Estrazioni Lotto in diretta</h1>
+    <p>Ultima estrazione completa, aggiornamento automatico e conto alla rovescia alla prossima estrazione.</p>
+    <div class="hero-actions live-hero-actions">
+      <button id="liveRefreshButton" type="button" class="method-button">Aggiorna ora</button>
+      <a class="method-button secondary-button" href="/">Torna alla home</a>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="cards live-top-grid">
+      <article class="card live-status-card">
+        <div class="section-title-row">
+          <div>
+            <h2>Stato aggiornamento</h2>
+            <p id="liveStatusText" class="muted">Sto caricando i dati delle estrazioni...</p>
+          </div>
+          <span class="badge live-badge">Auto refresh 60s</span>
+        </div>
+        <p id="liveSourceText" class="muted">Fonte dati in preparazione...</p>
+      </article>
+
+      <article class="card countdown-card">
+        <h2>Prossima estrazione</h2>
+        <p id="liveCountdownLabel" class="muted">Calcolo del prossimo appuntamento in corso...</p>
+        <div id="liveCountdown" class="live-countdown-value">--:--:--</div>
+        <p class="muted">Calendario standard: martedì, giovedì, venerdì e sabato alle 20:00 (ora italiana), salvo eventuali spostamenti festivi.</p>
+      </article>
+    </section>
+
+    <section class="card">
+      <div class="section-title-row">
+        <div>
+          <h2>Ultima estrazione disponibile</h2>
+          <p id="latestExtractionMeta" class="muted">Caricamento dell'ultima estrazione...</p>
+        </div>
+      </div>
+      <div id="latestExtractionWrap" class="cards">
+        <div class="card subtle-card">Sto preparando le ruote dell'ultima estrazione...</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-title-row">
+        <div>
+          <h2>Ultime estrazioni recenti</h2>
+          <p class="muted">Vista rapida delle ultime estrazioni pubblicate.</p>
+        </div>
+      </div>
+      <div id="recentExtractionsList" class="cards">
+        <div class="card subtle-card">Caricamento storico recente...</div>
+      </div>
+    </section>
+  </main>
+
+  <script src="auth.js"></script>
+  <script src="estrazioni-diretta.js"></script>
+</body>
+</html>
