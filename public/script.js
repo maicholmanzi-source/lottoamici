@@ -127,6 +127,30 @@ async function caricaEstrazioni() {
   }
 }
 
+
+function copyTextToClipboard(text) {
+  if (!navigator.clipboard?.writeText) {
+    return Promise.reject(new Error('Clipboard non disponibile'));
+  }
+  return navigator.clipboard.writeText(text);
+}
+
+function buildExtractionPlainText(estrazione) {
+  const lines = Object.entries(estrazione?.ruote || {}).map(([ruota, numeri]) => `${ruota}: ${(numeri || []).map(formatNumero).join(' - ')}`);
+  return `${estrazione?.dataTesto || ''} · concorso ${estrazione?.concorso || ''}\n${lines.join('\n')}`.trim();
+}
+
+function buildExtractionComparison(current, previous) {
+  if (!current || !previous) return '';
+  const repeated = [];
+  Object.entries(current.ruote || {}).forEach(([ruota, numeri]) => {
+    const prev = previous.ruote?.[ruota] || [];
+    const same = (numeri || []).filter((numero) => prev.includes(numero));
+    if (same.length) repeated.push(`${ruota}: ${same.map(formatNumero).join(' - ')}`);
+  });
+  return repeated.length ? `Numeri ripetuti rispetto all'estrazione precedente: ${repeated.join(' · ')}.` : "Nessun numero ripetuto rispetto all'estrazione precedente.";
+}
+
 function renderEstrazioni(data, ruotaSelezionata) {
   if (!listaEstrazioni) return;
 
@@ -153,10 +177,12 @@ function renderEstrazioni(data, ruotaSelezionata) {
 
   const visibleEstrazioni = getAuthStateSnapshot().canAccessProtected ? data.estrazioni : data.estrazioni.slice(0, 1);
 
-  visibleEstrazioni.forEach((estrazione) => {
+  visibleEstrazioni.forEach((estrazione, index) => {
     const card = document.createElement("div");
     card.className = "card";
 
+    const previous = visibleEstrazioni[index + 1] || null;
+    const comparison = index === 0 ? buildExtractionComparison(estrazione, previous) : '';
     const ruoteHtml = Object.entries(estrazione.ruote)
       .map(([ruota, numeri]) => {
         return `<div class="ruota"><strong>${ruota}:</strong> ${numeri.join(" - ")}</div>`;
@@ -164,10 +190,29 @@ function renderEstrazioni(data, ruotaSelezionata) {
       .join("");
 
     card.innerHTML = `
-      <h3>${estrazione.dataTesto}</h3>
-      <p><strong>Concorso:</strong> ${estrazione.concorso}</p>
+      <div class="extraction-card-top">
+        <div>
+          <h3>${estrazione.dataTesto}</h3>
+          <p><strong>Concorso:</strong> ${estrazione.concorso}</p>
+        </div>
+        ${index === 0 ? '<button type="button" class="method-button secondary-button" data-copy-extraction>Copia numeri</button>' : ''}
+      </div>
+      ${index === 0 ? `<p class="muted latest-extraction-compare">${comparison}</p>` : ''}
       ${ruoteHtml}
     `;
+
+    if (index === 0) {
+      const copyButton = card.querySelector('[data-copy-extraction]');
+      copyButton?.addEventListener('click', async () => {
+        try {
+          await copyTextToClipboard(buildExtractionPlainText(estrazione));
+          copyButton.textContent = 'Copiato';
+          setTimeout(() => { copyButton.textContent = 'Copia numeri'; }, 1600);
+        } catch {
+          copyButton.textContent = 'Copia non disponibile';
+        }
+      });
+    }
 
     listaEstrazioni.appendChild(card);
   });

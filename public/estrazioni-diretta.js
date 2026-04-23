@@ -6,6 +6,7 @@ const latestExtractionMeta = document.getElementById("latestExtractionMeta");
 const latestExtractionWrap = document.getElementById("latestExtractionWrap");
 const recentExtractionsList = document.getElementById("recentExtractionsList");
 const liveRefreshButton = document.getElementById("liveRefreshButton");
+let copyLiveExtractionButton = null;
 
 const progressiveExtractionMeta = document.getElementById("progressiveExtractionMeta");
 const progressiveExtractionStatus = document.getElementById("progressiveExtractionStatus");
@@ -172,6 +173,7 @@ function renderLatestExtraction(estrazione) {
   const wheels = Object.entries(estrazione.ruote || {});
   latestExtractionWrap.innerHTML = `
     <div class="card live-extraction-card">
+      <div class="live-card-actions"><button id="copyLiveExtractionButton" type="button" class="method-button secondary-button">Copia numeri</button></div>
       <div class="live-wheel-grid">
         ${wheels.map(([ruota, numeri]) => `
           <div class="ruota live-wheel-box">
@@ -182,6 +184,17 @@ function renderLatestExtraction(estrazione) {
       </div>
     </div>
   `;
+
+  copyLiveExtractionButton = document.getElementById("copyLiveExtractionButton");
+  copyLiveExtractionButton?.addEventListener("click", async () => {
+    const text = Object.entries(estrazione.ruote || {}).map(([ruota, numeri]) => `${ruota}: ${(numeri || []).map((numero) => formatNumber(numero)).join(" - ")}`).join("\n");
+    try {
+      await navigator.clipboard.writeText(`${estrazione.dataTesto} · concorso ${estrazione.concorso}\n${text}`);
+      if (liveStatusText) liveStatusText.textContent = "Ultima estrazione copiata negli appunti.";
+    } catch {
+      if (liveStatusText) liveStatusText.textContent = "Copia non riuscita su questo dispositivo.";
+    }
+  });
 }
 
 function renderRecentExtractions(estrazioni = []) {

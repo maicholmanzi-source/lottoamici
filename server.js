@@ -3167,6 +3167,7 @@ const protectedStaticPages = [
   "/schedine-pronte.html",
   "/mie-schedine.html",
   "/metodi.html",
+  "/archivio-esiti.html",
   "/verifica-schedina.html",
   "/fai-3-fai-4.html",
   "/metodo-9-90.html",
@@ -3465,6 +3466,28 @@ app.delete("/api/mie-schedine/:id", requireApprovedApi, async (req, res) => {
     res.json({ messaggio: "Schedina eliminata." });
   } catch (error) {
     res.status(500).json({ errore: "Impossibile eliminare la schedina" });
+  }
+});
+
+app.get("/api/archivio-esiti", requireApprovedApi, async (req, res) => {
+  try {
+    const estrazioni = await getAllEstrazioni();
+    const records = buildHistoricalMethodSignals(estrazioni)
+      .map((item) => ({
+        ...item,
+        path: METHOD_META[item.metodo]?.path || "/metodi.html",
+        status: evaluateGiocataItem(item, estrazioni)
+      }))
+      .sort((a, b) => String(b.dataSegnale || "").localeCompare(String(a.dataSegnale || "")));
+
+    res.json({
+      updatedAt: estrazioni[0] || null,
+      total: records.length,
+      records
+    });
+  } catch (error) {
+    console.error("Errore /api/archivio-esiti:", error);
+    res.status(500).json({ errore: "Impossibile leggere l'archivio esiti", dettaglio: error.message });
   }
 });
 

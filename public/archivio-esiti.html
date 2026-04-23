@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#123a63" />
+  <meta name="robots" content="index,follow" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <link rel="stylesheet" href="style.css" />
+  <meta name="description" content="Archivio esiti dei segnali del sito Lotto: metodo, ruote, stato, colpi ed esito storico." />
+  <meta property="og:title" content="Archivio esiti dei metodi Lotto" />
+  <meta property="og:description" content="Storico consultabile dei segnali generati dai metodi con esito e colpo di presa." />
+  <title>Archivio esiti dei metodi Lotto</title>
+</head>
+<body class="app-page archive-page">
+  <header class="hero inner-hero">
+    <nav class="nav">
+      <a href="/">Home</a>
+      <a href="/estrazioni-diretta.html">Diretta estrazioni</a>
+      <a href="/schedine-pronte.html">Schedine pronte</a>
+      <a href="/giocate.html">Giocate</a>
+      <a href="/verifica-schedina.html">Verifica schedina</a>
+      <a href="/metodi.html">Metodi</a>
+      <a href="/fai-3-fai-4.html">Fai 3 Fai 4</a>
+    </nav>
+    <h1>Archivio esiti</h1>
+    <p>Storico dei segnali generati dai metodi con stato, colpi, dettaglio e data segnale.</p>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <div class="section-title-row">
+        <div>
+          <h2>Ricerca e filtri</h2>
+          <p class="muted">Consulta rapidamente prese, segnali ancora in corso, scaduti e parziali.</p>
+        </div>
+      </div>
+      <div class="filters-toolbar">
+        <label class="toolbar-field toolbar-search">
+          <span>Cerca</span>
+          <input id="archiveSearch" type="search" placeholder="Metodo, ruota o descrizione..." />
+        </label>
+        <label class="toolbar-field">
+          <span>Stato</span>
+          <select id="archiveStatusFilter">
+            <option value="all">Tutti gli stati</option>
+            <option value="hit">Prese</option>
+            <option value="ongoing">In corso</option>
+            <option value="partial">Parziali</option>
+            <option value="expired">Scadute</option>
+            <option value="miss">Non prese</option>
+          </select>
+        </label>
+        <label class="toolbar-field">
+          <span>Metodo</span>
+          <select id="archiveMethodFilter">
+            <option value="all">Tutti i metodi</option>
+          </select>
+        </label>
+        <label class="toolbar-field">
+          <span>Ruota</span>
+          <select id="archiveWheelFilter">
+            <option value="all">Tutte le ruote</option>
+          </select>
+        </label>
+        <label class="toolbar-field">
+          <span>Ordina per</span>
+          <select id="archiveSort">
+            <option value="recent">Segnale più recente</option>
+            <option value="status">Stato</option>
+            <option value="method">Metodo</option>
+          </select>
+        </label>
+      </div>
+      <p id="archiveInfo" class="muted">Caricamento archivio esiti...</p>
+    </section>
+
+    <section>
+      <div id="archiveList" class="cards">
+        <div class="card">Caricamento archivio...</div>
+      </div>
+    </section>
+  </main>
+
+  <script src="auth.js"></script>
+  <script src="archivio-esiti.js"></script>
+</body>
+</html>
